@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+<title>喵賊大盜 禁忌罐罐</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@500;800&display=swap">
+<style>
+/* 版面：整頁就是一張立體書舞台，HUD 像貼紙浮在畫面四角 */
+:root{
+  color-scheme:dark;
+  --night:#231a2e; --panel:#33263f; --cream:#fbeed6; --ink:#2b1b2e;
+  --tuna:#7fd0e6; --yolk:#f6c453; --alarm:#ef5d50; --mint:#8fc3b4;
+  --font:'Chiron GoRound TC','Noto Sans TC','Microsoft JhengHei','PingFang TC',system-ui,sans-serif;
+}
+html,body{height:100%}
+body{background:var(--night);color:var(--cream);font-family:var(--font);font-weight:500;
+  display:flex;flex-direction:column;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.stage{flex:1;min-height:0;position:relative;border-radius:20px;overflow:hidden;background:#1a1322}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;inset:10px 10px auto 10px;display:flex;gap:8px;align-items:flex-start;pointer-events:none;flex-wrap:wrap}
+.chip{background:var(--cream);color:var(--ink);border-radius:14px;padding:6px 10px;font-size:13px;font-weight:800;
+  box-shadow:0 3px 0 rgba(0,0,0,.25);display:flex;align-items:center;gap:8px;min-width:0}
+.bar{width:74px;height:10px;border-radius:6px;background:#d9c8ae;overflow:hidden}
+.bar i{display:block;height:100%;width:100%;background:var(--tuna);border-radius:6px}
+.goal{flex:1 1 160px;justify-content:center;text-align:center;background:var(--panel);color:var(--cream)}
+.shape{width:12px;height:12px;background:var(--mint);border-radius:50%;flex:none}
+.alert.sus .shape{background:var(--yolk);border-radius:2px;transform:rotate(45deg)}
+.alert.chase .shape{background:var(--alarm);border-radius:0;clip-path:polygon(50% 0,100% 100%,0 100%)}
+.alert.chase{animation:wob .25s infinite alternate}
+@keyframes wob{to{transform:translateY(-2px)}}
+#scent{width:34px;height:34px;border-radius:50%;padding:0;justify-content:center;font-size:11px;
+  background:conic-gradient(var(--yolk) calc(var(--p,0)*1turn),#d9c8ae 0)}
+#scent span{background:var(--cream);border-radius:50%;width:24px;height:24px;display:grid;place-items:center}
+button{font-family:inherit;font-weight:800;color:var(--ink);background:var(--cream);border:0;border-radius:14px;
+  box-shadow:0 3px 0 rgba(0,0,0,.3);cursor:pointer;touch-action:manipulation}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+button:focus-visible{outline:3px solid var(--tuna);outline-offset:2px}
+#btnPause{pointer-events:auto;width:36px;height:34px;font-size:14px}
+#prompt,#toast{position:absolute;left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);text-align:center;
+  border-radius:14px;padding:7px 14px;font-size:14px;font-weight:800;pointer-events:none}
+#prompt{bottom:128px;background:var(--yolk);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.3)}
+#toast{top:64px;background:rgba(35,26,46,.92);color:var(--cream);border:2px solid var(--cream)}
+.pad{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:12px;display:grid;gap:8px;justify-items:end}
+.forms{display:flex;gap:6px}
+.forms button{width:52px;height:44px;font-size:12px;line-height:1.1}
+.forms button[aria-pressed="true"]{background:var(--tuna)}
+.forms button:disabled{opacity:.35}
+.acts{display:flex;gap:8px;align-items:flex-end}
+#btnMeow{width:52px;height:52px;border-radius:50%;font-size:13px}
+#btnE{width:76px;height:76px;border-radius:50%;font-size:15px;background:var(--yolk)}
+.joy{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:14px;width:118px;height:118px;border-radius:50%;
+  background:rgba(251,238,214,.22);border:3px solid rgba(251,238,214,.6);display:none;place-items:center;touch-action:none}
+.joy i{width:50px;height:50px;border-radius:50%;background:var(--cream);box-shadow:0 3px 0 rgba(0,0,0,.3);pointer-events:none}
+@media (pointer:coarse){.joy{display:grid}}
+.keys{position:absolute;left:12px;bottom:12px;font-size:12px;opacity:.75;pointer-events:none;line-height:1.5}
+@media (pointer:coarse){.keys{display:none}}
+.ov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(26,19,34,.72);padding:16px;text-align:center}
+.card{background:var(--panel);border:3px solid var(--cream);border-radius:22px;padding:20px 22px;max-width:420px;width:100%;
+  display:grid;gap:12px;justify-items:center}
+.card h1,.card h2{margin:0;text-wrap:balance;font-weight:800}
+.card h1{font-size:30px;color:var(--yolk)} .card h2{font-size:22px}
+.card p{margin:0;line-height:1.6}
+.card button{padding:10px 18px;font-size:15px}
+#ovTitle{background:linear-gradient(rgba(26,19,34,.15),rgba(26,19,34,.8))}
+#ovTitle .card{background:transparent;border:0}
+.blink{animation:bl 1.2s infinite alternate}@keyframes bl{to{opacity:.35}}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.stats{display:grid;grid-template-columns:auto auto;gap:4px 16px;text-align:left;font-variant-numeric:tabular-nums}
+.stats b{color:var(--yolk)}
+label{display:flex;gap:8px;align-items:center}
+@media (prefers-reduced-motion:reduce){.blink,.alert.chase{animation:none}}
+</style>
+</head>
+<body>
+
+
+<div class="stage" id="stage">
+  <canvas id="cv"></canvas>
+  <div class="hud">
+    <div class="chip"><span id="formName">普通貓</span><div class="bar"><i id="wbar"></i></div></div>
+    <div class="chip goal" id="goal">假裝這裡沒有貓</div>
+    <div class="chip" id="scent" hidden><span>香</span></div>
+    <div class="chip alert" id="alert"><span class="shape"></span><span id="alertTxt">巡邏中</span></div>
+    <button id="btnPause" aria-label="暫停">II</button>
+  </div>
+  <div id="toast" hidden></div>
+  <div id="prompt" hidden></div>
+  <div class="keys">WASD／方向鍵 移動　E 互動<br>1 普通　2 迷你　3 巨大　Q 切換<br>空白鍵 喵　Esc 暫停</div>
+  <div class="joy" id="joy" aria-label="移動搖桿"><i></i></div>
+  <div class="pad">
+    <div class="forms">
+      <button id="f0" aria-pressed="true">普通<br>1</button>
+      <button id="f1" aria-pressed="false">迷你<br>2</button>
+      <button id="f2" aria-pressed="false" disabled>巨大<br>3</button>
+    </div>
+    <div class="acts"><button id="btnMeow">喵</button><button id="btnE">互動</button></div>
+  </div>
+
+  <div class="ov" id="ovTitle">
+    <div class="card">
+      <h1>喵賊大盜：禁忌罐罐</h1>
+      <p>第一關　打噴嚏的廚房</p>
+      <p class="blink">按任意鍵，假裝這裡沒有貓</p>
+    </div>
+  </div>
+  <div class="ov" id="ovPause" hidden>
+    <div class="card">
+      <h2>暫停</h2>
+      <label>音量 <input type="range" id="vol" min="0" max="100" value="60"></label>
+      <label><input type="checkbox" id="mute"> 靜音</label>
+      <label><input type="checkbox" id="calm"> 減少畫面震動</label>
+      <div class="row"><button id="btnResume">繼續</button><button id="btnRestart">重新開始</button></div>
+    </div>
+  </div>
+  <div class="ov" id="ovCaught" hidden>
+    <div class="card">
+      <h2>被逮到了！</h2>
+      <p id="gag"></p>
+      <button id="btnRetry">再試一次</button>
+    </div>
+  </div>
+  <div class="ov" id="ovWin" hidden>
+    <div class="card">
+      <h1>今晚的罐罐，取得成功。</h1>
+      <div class="stats" id="stats"></div>
+      <p>稱號：<b id="rank" style="color:var(--yolk)"></b></p>
+      <button id="btnAgain">再玩一次</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+var TS=32,COLS=26,ROWS=17,W=COLS*TS,H=ROWS*TS;
+var MAP=[
+"##########################",
+"#.....#CCCCCCCCCCCCCCFPFC#",
+"#.....#..............FDF.#",
+"#.....#..................#",
+"#.....#..................#",
+"#CCgCC#..................#",
+"#.....#.........CC.......#",
+"#.....#...TTTT..CC.......#",
+"#.....#...TTTT..CC.......#",
+"#.....#...TTTT..CC.......#",
+"#.....#.........CC.......#",
+"#.....#..................#",
+"#....................CCCC#",
+"#....................C...#",
+"#........................#",
+"#....................C...#",
+"##########################"];
+MAP.forEach(function(r,i){if(r.length!==COLS)console.error('map row',i,r.length);});
+var ISL=[[20,3,24,5],[8,3,13,5],[11,10,15,13],[7,12,8,14],[1,11,5,15]];
+var CFG={vision:6.2,cone:0.62,
+  dog1:{patrol:50,inv:72,chase:124},dog2:{patrol:40,inv:54,chase:80},
+  scentEvery:7,scentRad:7,plateSpeed:48,plateWait:2.6};
+var FORMS=[{name:'普通貓',r:10,speed:115},{name:'迷你貓',r:4.5,speed:82},{name:'巨大貓',r:21,speed:74}];
+var WP1=[[8,3],[19,3],[19,13],[8,14],[8,10]], WP2=[[18,14],[18,8],[14,6],[9,8],[9,15],[18,15]];
+var CAN={x:22.5*TS,y:1.5*TS}, HANDLE={x:23.5*TS,y:13.3*TS}, SPOON={x:11.5*TS,y:12.5*TS}, FISH={x:3.5*TS,y:2.5*TS}, CHECK={x:22.5*TS,y:4.5*TS};
+
+var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+function $(id){return document.getElementById(id);}
+var S,P,D,cw=0,ch=0,dpr=1,vsc=1,cam={x:0,y:0};
+var opt={vol:0.6,mute:false,calm:false};
+try{opt.calm=window.matchMedia('(prefers-reduced-motion: reduce)').matches;}catch(e){}
+var keys={},joy={x:0,y:0,id:null,bx:0,by:0};
+
+/* ---------- 地圖規則 ---------- */
+function tileAt(c,r){if(c<0||r<0||c>=COLS||r>=ROWS)return '#';return MAP[r].charAt(c);}
+function isIsland(c,r){
+  for(var i=0;i<ISL.length;i++){var a=ISL[i];if(c>=a[0]&&c<=a[2]&&r>=a[1]&&r<=a[3])return true;}
+  return S.bridge&&r===12&&(c===9||c===10);
+}
+// solid 全擋、gap 只有迷你貓能過、soup 不能走、floor 可走
+function kindAt(c,r){
+  var ch=tileAt(c,r);
+  if(ch==='#'||ch==='C'||ch==='F'||ch==='P'||ch==='D')return 'solid';
+  if(ch==='T'||ch==='g')return 'gap';
+  if(!S.bread.pushed&&c===21&&r===14)return 'solid';
+  if(S.bread.pushed&&c===24&&r===15)return 'solid';
+  if(S.phase===2){
+    if(c===6&&(r===12||r===14))return 'solid';
+    if(c===6&&r===13)return 'gap';
+    return isIsland(c,r)?'floor':'soup';
+  }
+  return 'floor';
+}
+function blocksVision(c,r){var k=kindAt(c,r);return k==='solid'||k==='gap';}
+function dogPass(c,r){var k=kindAt(c,r);return k==='floor'||k==='soup';}
+function fits(x,y,r,form){
+  var c0=Math.floor((x-r)/TS),c1=Math.floor((x+r)/TS),r0=Math.floor((y-r)/TS),r1=Math.floor((y+r)/TS);
+  for(var rr=r0;rr<=r1;rr++)for(var cc=c0;cc<=c1;cc++){
+    var k=kindAt(cc,rr);
+    if(k==='solid')return false;
+    if(k==='gap'&&form!==1)return false;
+  }
+  return true;
+}
+function nearestValid(x,y,form){
+  var best=null,bd=1e9,R=FORMS[form].r;
+  for(var r=0;r<ROWS;r++)for(var c=0;c<COLS;c++){
+    if(kindAt(c,r)!=='floor')continue;
+    var px=(c+0.5)*TS,py=(r+0.5)*TS;
+    if(!fits(px,py,R,form))continue;
+    var d=Math.hypot(px-x,py-y);if(d<bd){bd=d;best={x:px,y:py};}
+  }
+  return best||{x:CHECK.x,y:CHECK.y};
+}
+function los(x0,y0,x1,y1){
+  var dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),n=Math.ceil(L/8);
+  for(var i=1;i<n;i++){var t=i/n;if(blocksVision(Math.floor((x0+dx*t)/TS),Math.floor((y0+dy*t)/TS)))return false;}
+  return true;
+}
+// 從狗的位置 BFS，走到「到得了、且離目標最近」的那一格
+function pathTo(tx,ty){
+  var sc=Math.floor(D.x/TS),sr=Math.floor(D.y/TS),N=COLS*ROWS,prev=new Int32Array(N),seen=new Uint8Array(N);
+  var q=[sr*COLS+sc],head=0,best=q[0],bd=1e9;seen[q[0]]=1;prev[q[0]]=-1;
+  var dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+  while(head<q.length){
+    var cur=q[head++],c=cur%COLS,r=(cur-c)/COLS;
+    var d=Math.hypot((c+0.5)*TS-tx,(r+0.5)*TS-ty);if(d<bd){bd=d;best=cur;}
+    for(var i=0;i<8;i++){
+      var nc=c+dirs[i][0],nr=r+dirs[i][1];
+      if(!dogPass(nc,nr))continue;
+      if(i>3&&(!dogPass(c+dirs[i][0],r)||!dogPass(c,r+dirs[i][1])))continue;
+      var ni=nr*COLS+nc;if(seen[ni])continue;seen[ni]=1;prev[ni]=cur;q.push(ni);
+    }
+  }
+  var out=[];for(var k=best;k!==-1&&prev[k]!==-1;k=prev[k]){var kc=k%COLS;out.unshift({x:(kc+0.5)*TS,y:((k-kc)/COLS+0.5)*TS});}
+  return out;
+}
+
+/* ---------- 初始化 ---------- */
+function mkPlate(kind,pts,lands){
+  var p={kind:kind,pts:pts.map(function(a){return {x:a[0]*TS,y:a[1]*TS};}),lands:lands.map(function(a){return {x:a[0]*TS,y:a[1]*TS};}),seg:[],len:0};
+  for(var i=1;i<p.pts.length;i++){var l=Math.hypot(p.pts[i].x-p.pts[i-1].x,p.pts[i].y-p.pts[i-1].y);p.seg.push(l);p.len+=l;}
+  resetPlate(p);return p;
+}
+function resetPlate(p){p.u=0;p.at=0;p.state='wait';p.timer=CFG.plateWait;p.dir=1;p.x=p.pts[0].x;p.y=p.pts[0].y;p.dx=0;p.dy=0;}
+function platePos(p,u){
+  for(var i=0;i<p.seg.length;i++){
+    if(u<=p.seg[i]||i===p.seg.length-1){var t=p.seg[i]?Math.min(1,u/p.seg[i]):0,a=p.pts[i],b=p.pts[i+1];return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};}
+    u-=p.seg[i];
+  }
+  return p.pts[0];
+}
+function newGame(){
+  S={mode:'title',phase:1,t:0,time:0,trans:0,
+    bread:{pushed:false,k:0},handle:false,bridge:false,bridgeK:0,
+    toy:{x:8.5*TS,y:12.5*TS,vx:0,vy:0,moving:false,gone:false,held:false},fish:true,
+    scentT:0,fx:[],txt:[],rings:[],shake:0,sneezeT:2.5,sneeze:0,hint:{},
+    boxes:[{x:2.5*TS,y:14.5*TS,exit:true},{x:14.5*TS,y:13.5*TS},{x:12.5*TS,y:3.5*TS}],
+    plates:[mkPlate('plate',[[19.5,4.5],[14.5,4.5]],[[20.5,4.5],[13.5,4.5]]),
+            mkPlate('toast',[[9.5,6.5],[9.5,10.5],[10.5,10.5]],[[9.5,5.5],[11.5,10.5]])],
+    stats:{detected:0,caught:0,hides:0,forms:{0:true},giantT:0,tinyT:0,scares:0,falls:0},
+    win:0,winDone:false,scareCd:0,meowCd:0,toastT:0,capT:0};
+  P={x:2.5*TS,y:14.5*TS,form:0,r:10,vs:1,vv:0,wonder:100,hidden:S.boxes[0],riding:null,hasCan:false,
+    face:{x:1,y:0},unl:[true,true,false],grace:0,stepT:0,moving:false,safe:{x:CHECK.x,y:CHECK.y}};
+  D={x:0,y:0,ang:0,tang:0,state:'patrol',timer:0,meter:0,sees:false,lostT:9,last:{x:0,y:0},look:{x:0,y:0},
+    reason:'',path:[],wp:0,repath:0,witness:null,box:null,dist:999,range:1};
+  resetDog();
+  $('ovTitle').hidden=false;$('ovPause').hidden=true;$('ovCaught').hidden=true;$('ovWin').hidden=true;
+  syncHud();
+}
+function wps(){return S.phase===2?WP2:WP1;}
+function spd(){return S.phase===2?CFG.dog2:CFG.dog1;}
+function resetDog(){
+  var w=wps(),bi=0,bd=-1;
+  for(var i=0;i<w.length;i++){var d=Math.hypot((w[i][0]+0.5)*TS-P.x,(w[i][1]+0.5)*TS-P.y);if(d>bd){bd=d;bi=i;}}
+  D.x=(w[bi][0]+0.5)*TS;D.y=(w[bi][1]+0.5)*TS;D.wp=bi;D.state='patrol';D.path=[];D.meter=0;D.sees=false;D.lostT=9;D.witness=null;D.box=null;D.timer=0;
+}
+
+/* ---------- 音效 ---------- */
+var AC=null,master=null,nbuf=null,musT=0,musI=0;
+function audioInit(){
+  if(AC)return;
+  try{AC=new (window.AudioContext||window.webkitAudioContext)();master=AC.createGain();master.connect(AC.destination);setVol();}catch(e){AC=null;}
+}
+function setVol(){if(master)master.gain.value=opt.mute?0:opt.vol*0.6;}
+function tone(f,dur,type,vol,f2,delay){
+  if(!AC)return;var t0=AC.currentTime+(delay||0),o=AC.createOscillator(),g=AC.createGain();
+  o.type=type||'triangle';o.frequency.setValueAtTime(f,t0);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t0+dur);
+  g.gain.setValueAtTime(vol||0.1,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  o.connect(g);g.connect(master);o.start(t0);o.stop(t0+dur+0.03);
+}
+function hiss(dur,vol,freq,delay){
+  if(!AC)return;
+  if(!nbuf){nbuf=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);var d=nbuf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;}
+  var t0=AC.currentTime+(delay||0),s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();
+  s.buffer=nbuf;f.type='lowpass';f.frequency.value=freq||1200;g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+  s.connect(f);f.connect(g);g.connect(master);s.start(t0);s.stop(t0+dur+0.03);
+}
+var sfx={
+  shrink:function(){tone(900,0.28,'sine',0.14,220);hiss(0.25,0.05,3000);},
+  grow:function(){tone(90,0.3,'sine',0.25,160);tone(700,0.07,'square',0.08,1200,0.26);},
+  back:function(){tone(400,0.15,'triangle',0.12,600);},
+  meow:function(d){tone(620,0.16,'sawtooth',0.07,880,d||0);tone(880,0.26,'sawtooth',0.06,520,(d||0)+0.14);},
+  no:function(){tone(180,0.12,'square',0.06,140);},
+  thud:function(){tone(70,0.14,'sine',0.25,45);hiss(0.08,0.12,300);},
+  push:function(){hiss(0.7,0.2,500);tone(110,0.6,'sawtooth',0.06,70);},
+  crank:function(){for(var i=0;i<5;i++)tone(500+i*90,0.06,'square',0.06,null,i*0.08);},
+  kick:function(){tone(300,0.1,'triangle',0.12,700);},
+  squeak:function(){tone(1200,0.12,'sine',0.1,1700);tone(1500,0.1,'sine',0.08,1100,0.12);},
+  sus:function(){tone(520,0.1,'triangle',0.1);tone(660,0.14,'triangle',0.1,null,0.11);},
+  bark:function(){tone(260,0.09,'square',0.12,180);tone(300,0.12,'square',0.12,170,0.13);},
+  yelp:function(){tone(900,0.25,'sawtooth',0.08,400);},
+  caught:function(){tone(500,0.5,'sine',0.14,120);hiss(0.3,0.08,2500);},
+  hop:function(){tone(420,0.1,'triangle',0.1,640);},
+  sneeze:function(){hiss(0.22,0.14,2600);tone(240,0.12,'sawtooth',0.04,120);},
+  scent:function(){tone(1300,0.3,'sine',0.04,1700);},
+  choir:function(){[523,659,784,1046].forEach(function(f,i){tone(f,0.9,'sawtooth',0.035,f*1.02,i*0.09);tone(f*0.99,0.9,'sine',0.05,f,i*0.09);});},
+  soup:function(){tone(200,1.2,'sine',0.15,60);hiss(1.2,0.15,700);},
+  splash:function(){hiss(0.45,0.25,900);tone(260,0.3,'sine',0.12,70);},
+  pop:function(){tone(180,0.06,'square',0.2,900);hiss(0.12,0.2,4000,0.03);}
+};
+var MEL=[523,0,659,0,784,659,0,587,523,0,440,0,523,587,659,0],MEL2=[659,784,880,784,659,587,523,587,659,880,988,880,784,659,587,523];
+function music(){
+  if(!AC||S.mode!=='play')return;
+  var hot=S.phase===2||D.state==='chase',step=hot?0.17:0.3;
+  if(AC.currentTime<musT)return;
+  musT=Math.max(AC.currentTime,musT)+step;
+  var n=(hot?MEL2:MEL)[musI%16];
+  if(n){tone(n,0.22,'triangle',0.05);tone(n*2,0.12,'sine',0.02);}
+  if(musI%4===0)tone(hot?131:98,0.25,'sine',0.07);
+  if(hot&&musI%2===1)hiss(0.03,0.03,6000);
+  musI++;
+}
+
+/* ---------- 提示與特效 ---------- */
+function say(t,dur){var e=$('toast');e.textContent=t;e.hidden=false;S.toastT=dur||3.2;}
+function once(k,t,dur){if(S.hint[k])return;S.hint[k]=1;say(t,dur||4.5);}
+function ftext(x,y,t,c){S.txt.push({x:x,y:y,t:t,c:c||'#fff',a:1.3});}
+function poof(x,y,n,c){for(var i=0;i<n;i++){var a=Math.random()*6.28,v=30+Math.random()*70;S.fx.push({x:x,y:y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-20,a:0.6,r:3+Math.random()*4,c:c});}}
+function shake(v){S.shake=Math.max(S.shake,opt.calm?v*0.15:v);}
+// 聲音／氣味只告訴狗「哪裡有事」，不會洩漏玩家之後的位置
+function noise(x,y,rad,kind){
+  S.rings.push({x:x,y:y,R:rad*TS,a:1,c:kind==='scent'?'#ffe9a0':'#ffffff'});
+  if(D.state==='chase'||D.state==='stun'||D.state==='inspect')return;
+  if(Math.hypot(D.x-x,D.y-y)>rad*TS)return;
+  D.look={x:x,y:y};D.reason=kind;D.state='suspect';D.timer=0.7;D.path=[];sfx.sus();
+}
+
+/* ---------- 玩家 ---------- */
+function transform(to,forced){
+  if(S.mode!=='play'||to===P.form)return;
+  if(!P.unl[to]){say('還沒學會這個變身喵');return;}
+  if(!forced){
+    if(P.hidden){say('先從紙箱出來再變身喵');return;}
+    if(P.wonder<(to===2?15:to===1?4:0)){say('奇想值不夠喵');sfx.no();return;}
+  }
+  if(P.riding){if(to===2){say('太重了，盤子會沉喵');sfx.no();return;}}
+  else if(!P.hidden){
+    var R=FORMS[to].r,pos=null;
+    if(fits(P.x,P.y,R,to))pos={x:P.x,y:P.y};
+    else for(var d=4;d<=24&&!pos;d+=4)for(var a=0;a<8&&!pos;a++){
+      var nx=P.x+Math.cos(a*0.785)*d,ny=P.y+Math.sin(a*0.785)*d;
+      if(fits(nx,ny,R,to))pos={x:nx,y:ny};
+    }
+    if(!pos){
+      if(!forced){say('這裡伸展不開喵');sfx.no();return;}
+      pos=nearestValid(P.x,P.y,to);
+    }
+    P.x=pos.x;P.y=pos.y;
+  }
+  dropToy();
+  P.form=to;P.r=FORMS[to].r;P.vv+=to===2?5:-3;S.stats.forms[to]=true;
+  poof(P.x,P.y-8,10,to===2?'#f6c453':'#7fd0e6');
+  if(to===1)sfx.shrink();else if(to===2){sfx.grow();shake(5);}else sfx.back();
+  syncHud();
+}
+function cycleForm(){for(var i=1;i<=3;i++){var f=(P.form+i)%3;if(P.unl[f]){transform(f);return;}}}
+function near(o,extra){return Math.hypot(o.x-P.x,o.y-P.y)<P.r+(extra||28);}
+function meow(){
+  if(S.mode!=='play'||S.meowCd>0||S.trans>0)return;S.meowCd=0.9;sfx.meow();
+  ftext(P.x,P.y-30*P.vs,P.form===2?'喵嗷！':'喵～','#fff');
+  // 巨大貓大吼：近距離嚇退狗一次，之後要冷卻
+  if(P.form===2&&!P.hidden&&D.state!=='stun'&&Math.hypot(P.x-D.x,P.y-D.y)<TS*2.4&&los(D.x,D.y,P.x,P.y)){
+    if(S.scareCd>0){say('剛吼過，喉嚨還沒好喵');}
+    else{S.scareCd=12;D.state='stun';D.timer=2.6;D.meter=0;D.path=[];S.stats.scares++;sfx.yelp();shake(6);ftext(D.x,D.y-40,'汪嗚！？','#f6c453');return;}
+  }
+  noise(P.x,P.y,8,'meow');
+}
+function dropToy(){if(S.toy.held){S.toy.held=false;S.toy.x=P.x;S.toy.y=P.y;}}
+function splash(){
+  S.stats.falls++;poof(P.x,P.y,16,'#f6b25a');sfx.splash();ftext(P.x,P.y-20,'噗通！','#fff');
+  P.x=P.safe.x;P.y=P.safe.y;P.riding=null;P.grace=1.2;say('掉進湯裡了！還好罐罐抱得很緊');
+}
+function action(){
+  if(P.hasCan){
+    var ex=S.boxes[0];
+    if(P.hidden===ex||near(ex,30)){
+      if(P.form===2)return {label:'先變小才進得去'};
+      return {label:'鑽進紙箱開飯',fn:function(){P.hidden=ex;P.x=ex.x;P.y=ex.y;S.mode='win';S.win=0;$('prompt').hidden=true;}};
+    }
+  }
+  if(P.hidden)return {label:'從紙箱出來',fn:function(){P.hidden=null;sfx.hop();}};
+  if(!P.hasCan&&Math.hypot(CAN.x-P.x,CAN.y+TS*1.2-P.y)<P.r+44){
+    if(!S.handle)return {label:'冰箱一直打噴嚏，門關得緊緊的'};
+    return {label:'拿走雲朵鮪魚罐',fn:takeCan};
+  }
+  if(!S.handle&&near(HANDLE,34)){
+    if(P.form!==0)return {label:'要普通貓才轉得動把手'};
+    return {label:'轉動魚骨把手',fn:function(){S.handle=true;sfx.crank();say('冰箱不打噴嚏了，門也開了！');syncHud();}};
+  }
+  if(!S.bread.pushed&&near({x:21.5*TS,y:14.5*TS},40)){
+    if(P.form!==2)return {label:'吐司太重，要巨大貓才推得動'};
+    return {label:'推開吐司',fn:function(){S.bread.pushed=true;sfx.push();shake(8);noise(21.5*TS,14.5*TS,9,'bread');syncHud();}};
+  }
+  if(S.phase===2&&!S.bridge&&near(SPOON,44)){
+    if(P.form!==2)return {label:'湯匙翹得高高的，要巨大貓才壓得下'};
+    return {label:'壓下湯匙搭橋',fn:function(){S.bridge=true;sfx.thud();shake(8);noise(SPOON.x,SPOON.y,6,'bread');say('湯匙橋搭好了！變回普通貓走過去');}};
+  }
+  for(var j=0;j<S.boxes.length;j++){
+    var b=S.boxes[j];
+    if(near(b,22)){
+      if(P.form===2)return {label:'太大了，躲不進去'};
+      return {label:'躲進紙箱',fn:(function(bx){return function(){
+        if(D.sees||(D.state==='chase'&&D.lostT<0.5))D.witness=bx;
+        P.hidden=bx;P.x=bx.x;P.y=bx.y;S.stats.hides++;sfx.hop();
+      };})(b)};
+    }
+  }
+  if(!S.toy.gone&&S.toy.held){
+    if(P.moving)return {label:'把球丟出去',fn:function(){var f=P.face;S.toy.held=false;S.toy.x=P.x;S.toy.y=P.y;S.toy.vx=f.x*300;S.toy.vy=f.y*300;S.toy.moving=true;sfx.kick();}};
+    return {label:'放下球（邊走邊按是丟出去）',fn:function(){dropToy();sfx.hop();}};
+  }
+  if(!S.toy.gone&&!S.toy.moving&&near(S.toy,22)){
+    if(P.form!==0)return {label:'要普通貓才叼得動球'};
+    return {label:'叼起球',fn:function(){S.toy.held=true;sfx.hop();once('toy','叼著球：邊走邊按 E 丟出去，站著按 E 放下。球停下時會吱一聲把狗引過去',6);}};
+  }
+  return null;
+}
+function interact(){if(S.mode!=='play'||S.trans>0)return;var a=action();if(a&&a.fn)a.fn();else if(a)sfx.no();}
+function takeCan(){
+  P.hasCan=true;S.phase=2;S.trans=1.8;S.toy.gone=true;S.scentT=CFG.scentEvery;
+  S.plates.forEach(resetPlate);
+  if(kindAt(Math.floor(P.x/TS),Math.floor(P.y/TS))!=='floor'){var v=nearestValid(P.x,P.y,P.form);P.x=v.x;P.y=v.y;}
+  P.safe={x:P.x,y:P.y};P.riding=null;
+  resetDog();sfx.choir();sfx.soup();shake(10);
+  say('地板變成湯了！踩著盤子逃回左下角的紙箱，踩空會掉下去',5);syncHud();
+}
+function playerUpdate(dt){
+  P.grace=Math.max(0,P.grace-dt);
+  if(P.form===0)P.wonder=Math.min(100,P.wonder+(P.hidden?20:10)*dt);
+  else{
+    P.wonder-=(P.form===1?3:15)*dt;
+    if(P.form===1)S.stats.tinyT+=dt;else S.stats.giantT+=dt;
+    if(P.wonder<=0){P.wonder=0;transform(0,true);say('奇想值用完，變回普通貓');}
+  }
+  P.moving=false;
+  if(P.hidden)return;
+  if(P.riding){P.x+=P.riding.dx;P.y+=P.riding.dy;}
+  var mx=(keys.right?1:0)-(keys.left?1:0)+joy.x,my=(keys.down?1:0)-(keys.up?1:0)+joy.y,L=Math.hypot(mx,my);
+  if(L>0.15){
+    if(L>1){mx/=L;my/=L;}
+    P.face={x:mx/Math.max(L,0.001)*(L>1?L:1),y:my/Math.max(L,0.001)*(L>1?L:1)};
+    var fl=Math.hypot(P.face.x,P.face.y);P.face.x/=fl;P.face.y/=fl;
+    var sp=FORMS[P.form].speed,nx=P.x+mx*sp*dt,ny=P.y+my*sp*dt;
+    if(fits(nx,P.y,P.r,P.form))P.x=nx;
+    if(fits(P.x,ny,P.r,P.form))P.y=ny;
+    P.moving=true;
+    if(P.form===2){P.stepT-=dt;if(P.stepT<=0){P.stepT=0.42;noise(P.x,P.y,5,'step');shake(3);sfx.thud();}}
+  }
+  if(S.toy.held){S.toy.x=P.x;S.toy.y=P.y;}
+  if(S.phase===2){
+    var pc=Math.floor(P.x/TS),pr=Math.floor(P.y/TS),pk=kindAt(pc,pr);
+    if(pk==='soup'){
+      var on=null;S.plates.forEach(function(p){if(Math.hypot(p.x-P.x,p.y-P.y)<19)on=p;});
+      if(on&&P.form===2){on=null;say('太重了，盤子沉下去了喵');}
+      P.riding=on;if(!on){splash();return;}
+    }else{P.riding=null;if(pk==='floor')P.safe={x:(pc+0.5)*TS,y:(pr+0.5)*TS};}
+  }
+  if(S.fish&&near(FISH,14)){
+    S.fish=false;P.unl[2]=true;sfx.choir();poof(FISH.x,FISH.y,14,'#f6c453');
+    say('學會巨大化！按 3 變大：推得動重物，按空白鍵大吼能嚇退靠近的狗。但腳步很吵、很耗奇想值',7);syncHud();
+  }
+  // 情境教學
+  if(!S.hint.gap&&P.form!==1&&Math.hypot(3.5*TS-P.x,5.5*TS-P.y)<TS*3.2)once('gap','按 2 縮小，從櫥櫃底下的縫鑽過去');
+  if(!S.hint.kitchen&&P.x>7*TS&&P.y>6*TS)once('kitchen','避開柴柴警官的視線。按空白鍵喵一聲，可以把牠引到別處');
+}
+
+/* ---------- 狗 ---------- */
+function canSee(){
+  if(P.hidden||P.grace>0)return false;
+  if(!P.riding&&kindAt(Math.floor(P.x/TS),Math.floor(P.y/TS))==='gap')return false;
+  var dx=P.x-D.x,dy=P.y-D.y,dist=Math.hypot(dx,dy),range=CFG.vision*TS*(P.form===1?0.5:P.form===2?1.3:1);
+  D.dist=dist;D.range=range;
+  if(dist>range)return false;
+  if(dist>TS*(P.form===1?0.8:1.4)){
+    var da=Math.atan2(dy,dx)-D.ang;da=Math.atan2(Math.sin(da),Math.cos(da));
+    if(Math.abs(da)>CFG.cone)return false;
+  }
+  return los(D.x,D.y,P.x,P.y);
+}
+function follow(speed,dt){
+  if(!D.path.length)return true;
+  var p=D.path[0],dx=p.x-D.x,dy=p.y-D.y,L=Math.hypot(dx,dy),st=speed*dt;
+  if(L<=st){D.x=p.x;D.y=p.y;D.path.shift();}
+  else{D.x+=dx/L*st;D.y+=dy/L*st;D.tang=Math.atan2(dy,dx);}
+  return D.path.length===0;
+}
+function faceTo(p){D.tang=Math.atan2(p.y-D.y,p.x-D.x);}
+function startChase(){
+  if(D.state!=='chase'){S.stats.detected++;sfx.bark();ftext(D.x,D.y-40,'站住！','#ef5d50');}
+  D.state='chase';D.repath=0;D.witness=null;
+}
+function toPatrol(){
+  var w=wps(),bi=0,bd=1e9;
+  for(var i=0;i<w.length;i++){var d=Math.hypot((w[i][0]+0.5)*TS-D.x,(w[i][1]+0.5)*TS-D.y);if(d<bd){bd=d;bi=i;}}
+  D.wp=bi;D.state='patrol';D.path=pathTo((w[bi][0]+0.5)*TS,(w[bi][1]+0.5)*TS);
+}
+function dogUpdate(dt){
+  var sp=spd(),da=Math.atan2(Math.sin(D.tang-D.ang),Math.cos(D.tang-D.ang));
+  D.ang+=da*Math.min(1,dt*7);
+  if(D.state==='stun'){D.timer-=dt;D.tang+=dt*9;if(D.timer<=0){D.state='search';D.timer=3;}return;}
+  var sees=canSee();D.sees=sees;
+  if(sees){
+    D.meter=Math.min(1,D.meter+dt/(0.35+0.75*(D.dist/D.range)));D.last={x:P.x,y:P.y};D.lostT=0;
+    if(D.meter>0.35)once('seen','被注意到了！離開視線，或按 E 躲進紙箱');
+  }else{D.lostT+=dt;if(D.state!=='chase')D.meter=Math.max(0,D.meter-dt*0.45);}
+  switch(D.state){
+    case 'patrol':
+      if(D.meter>=1){startChase();break;}
+      if(D.meter>0.35){D.state='suspect';D.timer=0.9;D.look={x:D.last.x,y:D.last.y};D.reason='sight';D.path=[];sfx.sus();break;}
+      if(follow(sp.patrol,dt)){var w=wps();D.wp=(D.wp+1)%w.length;D.path=pathTo((w[D.wp][0]+0.5)*TS,(w[D.wp][1]+0.5)*TS);}
+      break;
+    case 'suspect':
+      if(sees)D.look={x:P.x,y:P.y};
+      faceTo(D.look);D.timer-=dt;
+      if(D.meter>=1)startChase();
+      else if(D.timer<=0){D.state='investigate';D.path=pathTo(D.look.x,D.look.y);}
+      break;
+    case 'investigate':
+      if(D.meter>=1){startChase();break;}
+      if(follow(sp.inv,dt)){
+        if(D.reason==='scent'&&P.hidden&&Math.hypot(P.hidden.x-D.x,P.hidden.y-D.y)<TS*2.2){D.state='inspect';D.box=P.hidden;D.timer=1.3;}
+        else{D.state='search';D.timer=3.6;}
+      }
+      break;
+    case 'chase':
+      if(sees){D.repath-=dt;if(D.repath<=0){D.path=pathTo(P.x,P.y);D.repath=0.2;}}
+      else if(D.witness&&P.hidden===D.witness&&!D.path.length)D.path=pathTo(D.witness.x,D.witness.y);
+      var done=follow(sp.chase,dt);
+      if(!sees){
+        if(D.witness&&P.hidden===D.witness){if(Math.hypot(D.witness.x-D.x,D.witness.y-D.y)<TS*1.5){D.state='inspect';D.box=D.witness;D.timer=0.9;D.path=[];}}
+        else if(done&&D.lostT>0.4){D.state='search';D.timer=4.2;D.meter=0.3;}
+      }
+      break;
+    case 'inspect':
+      faceTo(D.box);D.timer-=dt;
+      if(D.timer<=0){if(P.hidden===D.box){caught('box');return;}D.state='search';D.timer=3;}
+      break;
+    case 'search':
+      D.timer-=dt;D.tang+=Math.sin(S.t*2.2)*dt*3.2;
+      if(D.meter>=1)startChase();
+      else if(D.timer<=0)toPatrol();
+      break;
+  }
+  if(!P.hidden&&P.grace<=0&&Math.hypot(P.x-D.x,P.y-D.y)<13+P.r&&(D.state==='chase'||sees))caught(P.riding?'ride':P.form===2?'giant':P.form===1?'tiny':'normal');
+}
+var GAGS={
+  box:'柴柴警官對紙箱進行了例行臨檢。箱子裡的貓表示：我只是包裹。',
+  ride:'警官連盤子一起端走了，還問要不要加湯。',
+  giant:'巨大貓被逮到後默默縮回原狀，假裝什麼事都沒發生。',
+  tiny:'米洛被裝進信封，並立刻假裝自己是一封信。',
+  normal:'收到罰單一張：未經許可的可愛。'
+};
+function caught(why){
+  S.mode='caught';S.stats.caught++;sfx.caught();
+  dropToy();P.hidden=null;S.capT=1.6;$('gag').textContent=GAGS[why]||GAGS.normal;$('prompt').hidden=true;
+}
+function respawn(){
+  $('ovCaught').hidden=true;
+  P.hidden=null;P.riding=null;P.form=0;P.r=10;P.wonder=Math.max(P.wonder,60);S.capT=0;P.safe={x:CHECK.x,y:CHECK.y};
+  if(S.phase===1){
+    var b=S.boxes[0],bd=1e9;
+    S.boxes.forEach(function(x){var d=Math.hypot(x.x-P.x,x.y-P.y);if(d<bd){bd=d;b=x;}});
+    P.x=b.x;P.y=b.y;P.grace=2.5;
+  }else{
+    P.x=CHECK.x;P.y=CHECK.y;P.hasCan=true;P.grace=3;S.scentT=CFG.scentEvery;S.plates.forEach(resetPlate);
+  }
+  resetDog();S.scareCd=0;S.mode='play';syncHud();
+}
+
+/* ---------- 世界更新 ---------- */
+function worldUpdate(dt){
+  S.scareCd=Math.max(0,S.scareCd-dt);S.meowCd=Math.max(0,S.meowCd-dt);
+  if(S.bread.pushed&&S.bread.k<1)S.bread.k=Math.min(1,S.bread.k+dt/0.8);
+  if(S.bridge&&S.bridgeK<1)S.bridgeK=Math.min(1,S.bridgeK+dt/0.4);
+  if(!S.handle){S.sneezeT-=dt;S.sneeze=Math.max(0,S.sneeze-dt);
+    if(S.sneezeT<=0){S.sneezeT=3.5+Math.random()*2;S.sneeze=0.35;ftext(22.5*TS,1*TS,'哈啾！','#dfeaf2');
+      if(Math.hypot(P.x-CAN.x,P.y-CAN.y)<TS*9)sfx.sneeze();}}
+  var t=S.toy;
+  if(t.moving){
+    var nx=t.x+t.vx*dt,ny=t.y+t.vy*dt,hit=false;
+    if(kindAt(Math.floor(nx/TS),Math.floor(t.y/TS))==='floor')t.x=nx;else hit=true;
+    if(kindAt(Math.floor(t.x/TS),Math.floor(ny/TS))==='floor')t.y=ny;else hit=true;
+    t.vx*=1-dt*1.6;t.vy*=1-dt*1.6;
+    if(hit||Math.hypot(t.vx,t.vy)<40){t.moving=false;t.vx=t.vy=0;sfx.squeak();noise(t.x,t.y,9,'toy');}
+  }
+  if(S.phase===2){
+    S.plates.forEach(function(p){
+      if(p.state==='wait'){p.timer-=dt;if(p.timer<=0){p.state='move';p.dir=p.at===0?1:-1;}}
+      else{p.u+=p.dir*CFG.plateSpeed*dt;
+        if(p.u>=p.len){p.u=p.len;p.at=1;p.state='wait';p.timer=CFG.plateWait;}
+        else if(p.u<=0){p.u=0;p.at=0;p.state='wait';p.timer=CFG.plateWait;}}
+      var q=platePos(p,p.u);p.dx=q.x-p.x;p.dy=q.y-p.y;p.x=q.x;p.y=q.y;
+    });
+    if(P.hasCan){S.scentT-=dt;if(S.scentT<=0){S.scentT=CFG.scentEvery;sfx.scent();noise(P.x,P.y,CFG.scentRad,'scent');}}
+  }
+}
+function update(dt){
+  S.t+=dt;
+  P.vv+=((P.r/10)-P.vs)*60*dt;P.vv*=Math.pow(0.002,dt);P.vs+=P.vv*dt;
+  S.shake=Math.max(0,S.shake-dt*30);
+  S.fx=S.fx.filter(function(f){f.x+=f.vx*dt;f.y+=f.vy*dt;f.a-=dt;return f.a>0;});
+  S.txt=S.txt.filter(function(f){f.y-=22*dt;f.a-=dt;return f.a>0;});
+  S.rings=S.rings.filter(function(f){f.a-=dt*1.4;return f.a>0;});
+  if(S.toastT>0){S.toastT-=dt;if(S.toastT<=0)$('toast').hidden=true;}
+  if(S.mode==='win'){
+    S.win+=dt;
+    if(S.win>3.4&&!S.winDone){S.winDone=true;sfx.pop();showWin();}
+    return;
+  }
+  if(S.mode==='caught'&&S.capT>0){S.capT-=dt;if(S.capT<=0)$('ovCaught').hidden=false;}
+  if(S.mode!=='play')return;
+  if(S.trans>0){S.trans-=dt;return;}
+  S.time+=dt;
+  worldUpdate(dt);playerUpdate(dt);
+  if(S.mode==='play')dogUpdate(dt);
+  music();
+  // HUD
+  $('wbar').style.width=P.wonder+'%';
+  var al=$('alert'),st=D.state;
+  al.className='chip alert'+(st==='chase'||st==='inspect'?' chase':(st==='suspect'||st==='investigate'||st==='search')?' sus':'');
+  $('alertTxt').textContent=st==='chase'?'追捕中':st==='inspect'?'臨檢紙箱':st==='suspect'?'起疑':st==='investigate'?'前往查看':st==='search'?'搜索中':st==='stun'?'嚇到了':'巡邏中';
+  var sc=$('scent');sc.hidden=!P.hasCan;if(P.hasCan)sc.style.setProperty('--p',1-S.scentT/CFG.scentEvery);
+  var a=action(),pr=$('prompt');
+  if(a){pr.hidden=false;pr.textContent=(a.fn?'E　':'')+a.label;$('btnE').textContent=a.fn?'互動':'…';}
+  else{pr.hidden=true;$('btnE').textContent='互動';}
+}
+function syncHud(){
+  $('formName').textContent=FORMS[P.form].name;
+  for(var i=0;i<3;i++){var b=$('f'+i);b.disabled=!P.unl[i];b.setAttribute('aria-pressed',P.form===i?'true':'false');}
+  $('goal').textContent=S.mode==='title'?'假裝這裡沒有貓':P.hasCan?'抱著罐罐逃回左下角的紙箱！':S.handle?'到右上角的冰箱拿雲朵鮪魚罐':S.bread.pushed?'轉動魚骨把手，讓冰箱停止打噴嚏':P.unl[2]?'用巨大貓推開右下角的吐司':'鑽過櫥櫃底下，找到神祕魚骨';
+}
+function target(){
+  if(P.hasCan)return S.boxes[0];
+  if(S.handle)return {x:CAN.x,y:CAN.y+TS};
+  if(S.bread.pushed)return HANDLE;
+  if(P.unl[2])return {x:21.5*TS,y:14.5*TS};
+  return P.y>5.5*TS?{x:3.5*TS,y:5.6*TS}:FISH;
+}
+function showWin(){
+  var s=S.stats,m=Math.floor(S.time/60),sec=Math.floor(S.time%60);
+  var forms=[0,1,2].filter(function(i){return s.forms[i];}).map(function(i){return FORMS[i].name;}).join('、');
+  var rank=(s.caught===0&&s.detected===0)?'幽靈小偷':s.hides>=3?'紙箱大師':s.giantT>14?'今天也很吵':s.tinyT>S.time*0.4?'迷你怪盜':'罐罐快遞員';
+  $('stats').innerHTML='<span>通關時間</span><b>'+m+' 分 '+(sec<10?'0':'')+sec+' 秒</b><span>被發現</span><b>'+s.detected+' 次</b><span>被逮到</span><b>'+s.caught+' 次</b><span>用過的型態</span><b>'+forms+'</b>';
+  $('rank').textContent=rank;$('ovWin').hidden=false;
+}
+
+/* ---------- 繪圖 ---------- */
+function el(x,y,rx,ry,c){ctx.fillStyle=c;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,6.2832);ctx.fill();}
+var SH={};
+function shade(hex,k){
+  var key=hex+k;if(SH[key])return SH[key];
+  var v=parseInt(hex.slice(1),16),r=v>>16,g=(v>>8)&255,b=v&255,t=k>0?255:0,a=Math.abs(k);
+  return SH[key]='rgb('+Math.round(r+(t-r)*a)+','+Math.round(g+(t-g)*a)+','+Math.round(b+(t-b)*a)+')';
+}
+// 黏土球：左上亮、右下暗，再點一顆高光
+function clay(x,y,rx,ry,c){
+  var g=ctx.createRadialGradient(x-rx*0.4,y-ry*0.5,Math.min(rx,ry)*0.1,x,y,Math.max(rx,ry)*1.2);
+  g.addColorStop(0,shade(c,0.3));g.addColorStop(0.55,c);g.addColorStop(1,shade(c,-0.28));
+  ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,6.2832);ctx.fill();
+  el(x-rx*0.38,y-ry*0.5,rx*0.2,ry*0.13,'rgba(255,255,255,.5)');
+}
+function tri(a,b,c,d,e,f,col){ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(a,b);ctx.lineTo(c,d);ctx.lineTo(e,f);ctx.fill();}
+function rr(x,y,w,h,r,c){ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.fill();}
+function drawCan(x,y,s){
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  el(0,0,13,13,'rgba(255,240,170,'+(0.25+Math.sin(S.t*4)*0.1)+')');
+  rr(-7,-7,14,13,3,'#c9d3dc');rr(-7,-4,14,7,0,'#5aa9d6');el(0,-0.5,4,2.2,'#fff');el(0,-7,7,2.2,'#e8eef3');
+  ctx.restore();
+}
+function drawCat(x,y,s,fx,moving,carry){
+  var t=S.t,bob=moving?Math.sin(t*16)*0.07:Math.sin(t*3)*0.02;
+  ctx.save();ctx.translate(x,y);ctx.scale(s*(fx<0?-1:1)*(1-bob),s*(1+bob));
+  el(0,3,11,4.5,'rgba(40,20,30,.22)');
+  ctx.strokeStyle='#d9853b';ctx.lineWidth=3.2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(-8,-4);ctx.quadraticCurveTo(-17,-6,-14,-16+Math.sin(t*5)*2);ctx.stroke();
+  clay(0,-6,10,8.5,'#f0a04b');el(1,-3,6,4.3,'#fde6c4');
+  ctx.strokeStyle='#d9853b';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-4,-13);ctx.lineTo(-4,-9);ctx.moveTo(-1,-14);ctx.lineTo(-1,-10);ctx.stroke();
+  clay(5,-15,7.6,6.8,'#f0a04b');
+  tri(0,-19,1.5,-26,5,-20.5,'#f0a04b');tri(6,-21,10,-26,11.5,-19,'#f0a04b');tri(1.6,-20,2.2,-23.5,4,-20.6,'#f7b8b0');
+  el(7,-13.2,3.4,2.4,'#fde6c4');el(3.8,-16,1.1,1.6,'#2b1b2e');el(9.2,-16,1.1,1.6,'#2b1b2e');el(7.2,-14,0.9,0.6,'#e2748a');
+  if(carry)drawCan(-1,-8,0.6);
+  ctx.restore();
+}
+function drawDog(){
+  var fx=Math.cos(D.ang)<0?-1:1,t=S.t,mv=D.path.length>0,bob=mv?Math.sin(t*12)*0.05:0;
+  ctx.save();ctx.translate(D.x,D.y);
+  if(S.phase===2){el(0,4,20,8,'#8d99a6');el(0,2,17,6,'#b9c4cf');el(0,0,3,2,'#6b7480');}
+  else el(0,4,14,5,'rgba(40,20,30,.22)');
+  ctx.scale(fx*(1-bob),1+bob);
+  ctx.strokeStyle='#c98a3e';ctx.lineWidth=4;ctx.lineCap='round';ctx.beginPath();ctx.arc(-12,-14,4.5,0.5,5.2);ctx.stroke();
+  clay(0,-8,13,10,'#e0a050');el(2,-4,8,5,'#fbeed6');
+  clay(8,-20,9,8,'#e0a050');tri(1,-25,2,-33,7,-26,'#c98a3e');tri(9,-27,13,-33,15,-25,'#c98a3e');
+  el(11,-17,5,4,'#fbeed6');el(6.5,-21,1.2,1.5,'#2b1b2e');el(12.5,-21,1.2,1.5,'#2b1b2e');el(13.5,-17.5,1.4,1,'#2b1b2e');
+  rr(1,-30,14,5,2,'#3d5a9e');rr(8,-27,10,2.5,1,'#2c4379');el(8,-27.5,1.6,1.2,'#f6c453');
+  ctx.restore();
+  // 狀態圖示：形狀跟顏色都不同
+  var ic=D.state==='chase'?'!':D.state==='inspect'?'嗅':D.state==='stun'?'@':(D.state==='suspect'||D.state==='investigate')?'?':D.state==='search'?'…':'';
+  if(ic){
+    var y=D.y-46+Math.sin(t*8)*2;ctx.save();ctx.translate(D.x,y);
+    if(D.state==='chase'||D.state==='inspect')tri(0,-11,10,8,-10,8,'#ef5d50');
+    else{ctx.rotate(0.785);rr(-7,-7,14,14,2,'#f6c453');ctx.rotate(-0.785);}
+    ctx.fillStyle='#2b1b2e';ctx.font='800 11px '+FONT;ctx.textAlign='center';ctx.fillText(ic,0,5);ctx.restore();
+  }
+  if(D.meter>0.02&&D.meter<1&&D.state!=='chase'){rr(D.x-12,D.y-34,24,4,2,'rgba(43,27,46,.6)');rr(D.x-12,D.y-34,24*D.meter,4,2,'#f6c453');}
+}
+var FONT="'Chiron GoRound TC','Noto Sans TC','Microsoft JhengHei',sans-serif";
+function drawBox(b){
+  var occ=P.hidden===b,br=occ?Math.sin(S.t*3)*0.03:0;
+  ctx.save();ctx.translate(b.x,b.y);ctx.scale(1+br,1-br);
+  el(0,10,17,5,'rgba(40,20,30,.2)');rr(-14,-12,28,22,3,'#c99a62');rr(-14,-12,28,6,2,'#b3844f');
+  ctx.strokeStyle='#8a6238';ctx.lineWidth=1.5;ctx.strokeRect(-14,-12,28,22);
+  if(b.exit){ctx.strokeStyle='#8a6238';ctx.beginPath();ctx.moveTo(-7,2);ctx.lineTo(7,2);for(var i=-4;i<=4;i+=4){ctx.moveTo(i,-1);ctx.lineTo(i,5);}ctx.stroke();}
+  if(occ&&S.mode!=='win'){rr(-8,-15,16,5,2,'#2b1b2e');el(-3,-12.5,1.3,1.6,'#f6c453');el(3,-12.5,1.3,1.6,'#f6c453');
+    ctx.strokeStyle='#d9853b';ctx.lineWidth=3;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(13,4);ctx.quadraticCurveTo(21,2,19,-6+Math.sin(S.t*4)*2);ctx.stroke();}
+  if(S.mode==='win'&&b.exit&&S.win>1)rr(-15,-14,30,7,2,'#b3844f');
+  ctx.restore();
+}
+function soupNow(c,r){
+  if(S.phase!==2||isIsland(c,r))return false;
+  if(S.trans<=0)return true;
+  return Math.hypot(c-22,r-2)<(1-S.trans/1.8)*30;
+}
+function drawFloor(c,r){
+  var x=c*TS,y=r*TS,ch=tileAt(c,r);
+  if(ch==='#')return;
+  if(soupNow(c,r)){
+    ctx.fillStyle='#e8963c';ctx.fillRect(x,y,TS,TS);
+    var h=(c*7+r*13)%5,w=Math.sin(S.t*1.6+c*0.9+r*1.3);
+    el(x+16+w*5,y+12+h*2,7,2.2,'rgba(255,214,140,.5)');
+    if(h===1)el(x+10,y+22+w*2,3,3,'#f26b3a');if(h===3)el(x+22,y+8-w*2,2.5,2.5,'#9ccf6a');
+    return;
+  }
+  ctx.fillStyle=(c+r)%2?'#f3dcc0':'#ecd0b0';ctx.fillRect(x,y,TS,TS);
+  ctx.fillStyle='rgba(255,255,255,.22)';ctx.fillRect(x+2,y+2,TS-4,2);ctx.fillStyle='rgba(120,70,40,.1)';ctx.fillRect(x+2,y+TS-3,TS-4,2);
+  if(S.phase===2&&S.trans<=0&&ch==='.'&&kindAt(c,r+1)==='soup'){ctx.fillStyle='#b98f66';ctx.fillRect(x,y+TS-6,TS,6);}
+}
+var TALL={'#':[20,'#5b4a6e','#463857'],C:[16,'#8fc3b4','#6da394'],g:[16,'#8fc3b4','#6da394'],F:[26,'#dfeaf2','#b8c9d6'],P:[26,'#dfeaf2','#b8c9d6'],D:[26,'#dfeaf2','#b8c9d6'],T:[12,'#d98a6a','#a85d44']};
+function drawTall(c,r){
+  var ch=tileAt(c,r),x=c*TS,y=r*TS,mug=S.phase===2&&S.trans<=0&&c===6&&r>=12&&r<=14,d=TALL[ch];
+  if(mug){
+    if(r===13){ctx.fillStyle='#2b1b2e';ctx.fillRect(x+6,y+8,TS-12,TS-8);ctx.strokeStyle='#f2f0e6';ctx.lineWidth=7;ctx.beginPath();ctx.arc(x+16,y+14,13,3.3,6.1);ctx.stroke();return;}
+    ctx.fillStyle='#cfcabb';ctx.fillRect(x,y+TS-22,TS,22);ctx.fillStyle='#f2f0e6';ctx.fillRect(x,y-22,TS,TS);ctx.fillStyle='#e2748a';ctx.fillRect(x,y-8,TS,5);return;
+  }
+  if(!d)return;
+  var h=d[0],sx=(ch==='F'||ch==='P'||ch==='D')&&S.sneeze>0?Math.sin(S.t*60)*2:0;
+  if(ch==='T'){
+    ctx.fillStyle='rgba(40,20,30,.25)';ctx.fillRect(x,y,TS,TS);
+    ctx.fillStyle=d[2];ctx.fillRect(x,y+TS-h-4,TS,5);ctx.fillStyle=d[1];ctx.fillRect(x,y-h,TS,TS);
+    if((c+r)%2){el(x+16,y-h+16,5,5,'#fbeed6');}
+    return;
+  }
+  ctx.fillStyle=d[2];ctx.fillRect(x+sx,y+TS-h,TS,h);ctx.fillStyle=d[1];ctx.fillRect(x+sx,y-h,TS,TS);
+  if(tileAt(c,r-1)!==ch){ctx.fillStyle='rgba(255,255,255,.28)';ctx.fillRect(x+sx,y-h,TS,4);}
+  if(tileAt(c,r+1)!==ch){ctx.fillStyle='rgba(0,0,0,.12)';ctx.fillRect(x+sx,y+TS-h-3,TS,3);ctx.fillStyle='rgba(0,0,0,.14)';ctx.fillRect(x+sx,y+TS-5,TS,5);}
+  if(ch==='g'){ctx.fillStyle='#2b1b2e';rr(x+5,y+TS-11,TS-10,11,4,'#2b1b2e');}
+  if(ch==='C'&&tileAt(c,r+1)!=='C'){el(x+16,y+TS-h+7,2,2,'#fbeed6');}
+  if(ch==='D'){
+    if(S.handle){ctx.fillStyle='#34485a';ctx.fillRect(x+3,y-8,TS-6,TS+4);if(!P.hasCan)drawCan(x+16,y+10,0.9);}
+    else{ctx.fillStyle='#a9bccb';ctx.fillRect(x+3+sx,y+TS-22,TS-6,20);ctx.fillStyle='#7fd0e6';ctx.fillRect(x+9+sx,y+TS-18,TS-18,8);}
+  }
+}
+function drawCone(){
+  if(D.state==='stun')return;
+  var n=22,R=CFG.vision*TS,col=D.state==='chase'||D.state==='inspect'?'239,93,80':(D.state==='patrol')?'246,196,83':'255,150,70';
+  ctx.beginPath();ctx.moveTo(D.x,D.y);
+  for(var i=0;i<=n;i++){
+    var a=D.ang-CFG.cone+CFG.cone*2*i/n,dx=Math.cos(a),dy=Math.sin(a),d=0;
+    while(d<R){d+=6;if(blocksVision(Math.floor((D.x+dx*d)/TS),Math.floor((D.y+dy*d)/TS)))break;}
+    ctx.lineTo(D.x+dx*d,D.y+dy*d);
+  }
+  ctx.closePath();ctx.fillStyle='rgba('+col+',.28)';ctx.fill();ctx.strokeStyle='rgba('+col+',.7)';ctx.lineWidth=1.5;ctx.setLineDash([6,5]);ctx.stroke();ctx.setLineDash([]);
+}
+function drawPlate(p){
+  if(p.kind==='toast'){rr(p.x-17,p.y-15,34,30,7,'#b9773c');rr(p.x-14,p.y-12,28,24,5,'#f1cf8e');}
+  else{el(p.x+1,p.y+3,18,16,'rgba(90,50,20,.3)');clay(p.x,p.y,18,16,'#dbe4ec');el(p.x,p.y,12,10,'rgba(255,255,255,.55)');}
+  if(p.state==='wait'){ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,21,-1.57,-1.57+6.28*(p.timer/CFG.plateWait));ctx.stroke();}
+}
+function resize(){
+  var st=$('stage');dpr=Math.min(window.devicePixelRatio||1,2);cw=st.clientWidth;ch=st.clientHeight;
+  cv.width=Math.round(cw*dpr);cv.height=Math.round(ch*dpr);
+  vsc=Math.max(0.95,Math.min(cw/W,ch/H,2));
+}
+function draw(){
+  var vw=cw/vsc,vh=ch/vsc;
+  cam.x=W>vw?Math.max(0,Math.min(W-vw,P.x-vw/2)):(W-vw)/2;
+  cam.y=H>vh?Math.max(0,Math.min(H-vh,P.y-vh/2)):(H-vh)/2;
+  var shx=(Math.random()-0.5)*S.shake,shy=(Math.random()-0.5)*S.shake;
+  ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='#1a1322';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.setTransform(dpr*vsc,0,0,dpr*vsc,(-cam.x+shx)*dpr*vsc,(-cam.y+shy)*dpr*vsc);
+  var c,r;
+  for(r=0;r<ROWS;r++)for(c=0;c<COLS;c++)drawFloor(c,r);
+  // 平貼地面的東西
+  if(S.bridge){var bw=TS*2*S.bridgeK;rr(11*TS-bw,12*TS+9,bw,14,7,'#c7d2dc');el(SPOON.x+4,SPOON.y,13,10,'#dfe6ec');}
+  else if(S.phase===2&&S.trans<=0){rr(11*TS-6,12*TS+9,20,14,7,'#c7d2dc');el(SPOON.x+8,SPOON.y-4,13,10,'#dfe6ec');}
+  if(S.phase===2&&S.trans<=0)S.plates.forEach(drawPlate);
+  if(S.fish){var fy=FISH.y+Math.sin(S.t*3)*3;el(FISH.x,fy,14,14,'rgba(246,196,83,.25)');ctx.strokeStyle='#fff8e0';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(FISH.x-9,fy);ctx.lineTo(FISH.x+7,fy);for(var i=-5;i<=3;i+=4){ctx.moveTo(FISH.x+i,fy-4);ctx.lineTo(FISH.x+i,fy+4);}ctx.stroke();tri(FISH.x+7,fy,FISH.x+12,fy-4,FISH.x+12,fy+4,'#fff8e0');}
+  if(S.mode!=='title')drawCone();
+  S.rings.forEach(function(g){ctx.strokeStyle=g.c;ctx.globalAlpha=g.a*0.7;ctx.lineWidth=2;ctx.setLineDash(g.c==='#ffe9a0'?[3,6]:[]);ctx.beginPath();ctx.arc(g.x,g.y,g.R*(1-g.a*0.8),0,6.28);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;});
+  // 目標指示
+  var tg=target();
+  if(S.mode==='play'){var by=tg.y-34+Math.sin(S.t*5)*4;tri(tg.x-7,by-8,tg.x+7,by-8,tg.x,by+2,'#f6c453');}
+  // 依列由上往下畫，做出前後遮擋
+  var ents=[];
+  S.boxes.forEach(function(b){ents.push({y:b.y,f:function(){drawBox(b);}});});
+  if(!S.toy.gone&&!S.toy.held)ents.push({y:S.toy.y,f:function(){el(S.toy.x,S.toy.y+4,7,3,'rgba(40,20,30,.2)');clay(S.toy.x,S.toy.y-2,6.5,6.5,'#e2748a');}});
+  var bk=S.bread.k,bx=21.5*TS+(24.5-21.5)*TS*bk,byy=14.5*TS+TS*bk;
+  ents.push({y:byy,f:function(){el(bx,byy+9,17,5,'rgba(40,20,30,.2)');rr(bx-15,byy-16,30,26,9,'#b9773c');rr(bx-12,byy-13,24,14,6,'#e7b56e');el(bx-5,byy-10,5,2,'rgba(255,255,255,.45)');}});
+  if(!S.handle||true)ents.push({y:HANDLE.y-TS,f:function(){var a=S.handle?1.2:Math.sin(S.t*2)*0.15;ctx.save();ctx.translate(HANDLE.x,HANDLE.y-14);ctx.rotate(a);rr(-2,-12,4,14,2,'#fff8e0');rr(-6,-13,12,3,1,'#fff8e0');el(0,2,4,4,'#f6c453');ctx.restore();}});
+  ents.push({y:D.y,f:drawDog});
+  if(!P.hidden)ents.push({y:P.y+0.1,f:function(){
+    if(P.grace>0&&Math.floor(S.t*12)%2)return;
+    var cap=S.mode==='caught'?Math.min(1,(1.6-S.capT)/1.2):0,cy=P.y-cap*26+(P.riding?-3:0);
+    drawCat(P.x,cy,P.vs,P.face.x,P.moving,P.hasCan);
+    if(S.toy.held&&!S.toy.gone)clay(P.x+P.face.x*9*P.vs,cy-12*P.vs,5.5,5.5,'#e2748a');
+    if(S.mode==='caught'){
+      var R=(22*P.vs+8)*Math.min(1,(1.6-S.capT)/0.35),bg=ctx.createRadialGradient(P.x-R*0.3,cy-12*P.vs-R*0.4,R*0.1,P.x,cy-10*P.vs,R);
+      bg.addColorStop(0,'rgba(255,255,255,.55)');bg.addColorStop(0.7,'rgba(160,220,240,.28)');bg.addColorStop(1,'rgba(127,208,230,.6)');
+      ctx.fillStyle=bg;ctx.beginPath();ctx.arc(P.x,cy-10*P.vs,R,0,6.28);ctx.fill();
+      ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=1.5;ctx.stroke();el(P.x-R*0.4,cy-10*P.vs-R*0.45,R*0.16,R*0.1,'rgba(255,255,255,.85)');
+    }
+    if(P.form===2&&S.scareCd<=0){ctx.strokeStyle='rgba(246,196,83,.5)';ctx.lineWidth=1.5;ctx.setLineDash([4,6]);ctx.beginPath();ctx.arc(P.x,P.y,TS*2.4,0,6.28);ctx.stroke();ctx.setLineDash([]);}
+  }});
+  ents.sort(function(a,b){return a.y-b.y;});
+  var ei=0;
+  for(r=0;r<ROWS;r++){
+    for(c=0;c<COLS;c++)drawTall(c,r);
+    while(ei<ents.length&&ents[ei].y<(r+1)*TS){ents[ei].f();ei++;}
+  }
+  if(!S.handle){ctx.globalAlpha=0.9;drawCan(CAN.x,CAN.y+TS+2,0.7);ctx.globalAlpha=1;}
+  S.fx.forEach(function(f){ctx.globalAlpha=Math.min(1,f.a*2);el(f.x,f.y,f.r,f.r,f.c);ctx.globalAlpha=1;});
+  ctx.textAlign='center';ctx.font='800 13px '+FONT;
+  S.txt.forEach(function(f){ctx.globalAlpha=Math.min(1,f.a);ctx.lineWidth=3;ctx.strokeStyle='#2b1b2e';ctx.strokeText(f.t,f.x,f.y);ctx.fillStyle=f.c;ctx.fillText(f.t,f.x,f.y);ctx.globalAlpha=1;});
+  // 目標在畫面外時，邊緣箭頭
+  if(S.mode==='play'){
+    var sx=tg.x-cam.x,sy=tg.y-cam.y;
+    if(sx<0||sy<0||sx>vw||sy>vh){
+      var cx=Math.max(26,Math.min(vw-26,sx)),cy=Math.max(70,Math.min(vh-26,sy)),an=Math.atan2(sy-cy,sx-cx);
+      ctx.save();ctx.translate(cam.x+cx,cam.y+cy);ctx.rotate(an);tri(12,0,-6,-8,-6,8,'#f6c453');ctx.restore();
+    }
+  }
+  if(S.trans>0){ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='rgba(255,236,190,'+(S.trans/1.8*0.5)+')';ctx.fillRect(0,0,cv.width,cv.height);}
+  if(S.mode==='win'){
+    ctx.setTransform(1,0,0,1,0,0);ctx.fillStyle='rgba(26,19,34,'+Math.min(0.75,S.win*0.3)+')';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#fbeed6';ctx.font='800 22px '+FONT;ctx.textAlign='center';
+    if(S.win>1.2&&S.win<3.4)ctx.fillText('……',cw/2,ch/2);
+  }
+}
+
+/* ---------- 輸入 ---------- */
+var KM={ArrowLeft:'left',a:'left',A:'left',ArrowRight:'right',d:'right',D:'right',ArrowUp:'up',w:'up',W:'up',ArrowDown:'down',s:'down',S:'down'};
+function startGame(){
+  if(S.mode!=='title')return;
+  audioInit();if(AC&&AC.state==='suspended')AC.resume();
+  $('ovTitle').hidden=true;S.mode='play';P.hidden=null;sfx.meow();syncHud();
+  say('WASD／方向鍵移動（手機用左下搖桿）。聞到罐罐的味道了……',5);
+}
+function togglePause(){
+  if(S.mode==='play'){S.mode='pause';$('ovPause').hidden=false;}
+  else if(S.mode==='pause'){S.mode='play';$('ovPause').hidden=true;}
+}
+window.addEventListener('keydown',function(e){
+  if(e.target&&e.target.tagName==='INPUT')return;
+  if(KM[e.key]||e.key===' ')e.preventDefault();
+  if(S.mode==='title'){startGame();return;}
+  if(S.mode==='caught'){if(!e.repeat){if(S.capT>0)S.capT=0.01;else respawn();}return;}
+  if(KM[e.key]){keys[KM[e.key]]=true;return;}
+  if(e.repeat)return;
+  var k=e.key.toLowerCase();
+  if(k==='escape')togglePause();
+  else if(k==='e'||k==='enter')interact();
+  else if(k==='q')cycleForm();
+  else if(k==='1')transform(0);else if(k==='2')transform(1);else if(k==='3')transform(2);
+  else if(k===' ')meow();
+});
+window.addEventListener('keyup',function(e){if(KM[e.key])keys[KM[e.key]]=false;});
+window.addEventListener('blur',function(){keys={};joy.x=joy.y=0;joy.id=null;if(jk)jk.style.transform='';});
+cv.addEventListener('pointerdown',function(){
+  if(S.mode==='title')startGame();
+  else if(S.mode==='caught'&&S.capT>0)S.capT=0.01;
+});
+var jo=$('joy'),jk=jo.firstElementChild;
+function jmove(e){
+  if(e.pointerId!==joy.id)return;
+  var b=jo.getBoundingClientRect(),dx=e.clientX-(b.left+b.width/2),dy=e.clientY-(b.top+b.height/2),L=Math.hypot(dx,dy),m=b.width/2-16;
+  if(L<6){joy.x=joy.y=0;}else{var k=Math.min(1,L/m);joy.x=dx/L*k;joy.y=dy/L*k;}
+  jk.style.transform='translate('+(joy.x*m)+'px,'+(joy.y*m)+'px)';
+}
+function joyEnd(e){if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;jk.style.transform='';}}
+jo.addEventListener('pointerdown',function(e){
+  if(S.mode==='title'){startGame();return;}
+  joy.id=e.pointerId;try{jo.setPointerCapture(e.pointerId);}catch(err){}jmove(e);
+});
+jo.addEventListener('pointermove',jmove);jo.addEventListener('pointerup',joyEnd);jo.addEventListener('pointercancel',joyEnd);
+$('ovTitle').addEventListener('pointerdown',startGame);
+$('btnE').addEventListener('click',interact);
+$('btnMeow').addEventListener('click',meow);
+[0,1,2].forEach(function(i){$('f'+i).addEventListener('click',function(){transform(i);});});
+$('btnPause').addEventListener('click',togglePause);
+$('btnResume').addEventListener('click',togglePause);
+$('btnRestart').addEventListener('click',function(){newGame();});
+$('btnRetry').addEventListener('click',respawn);
+$('btnAgain').addEventListener('click',function(){newGame();});
+$('vol').addEventListener('input',function(){opt.vol=this.value/100;setVol();});
+$('mute').addEventListener('change',function(){opt.mute=this.checked;setVol();});
+$('calm').checked=opt.calm;
+$('calm').addEventListener('change',function(){opt.calm=this.checked;});
+window.addEventListener('resize',resize);
+
+var last=0;
+function frame(ts){
+  var dt=Math.min(0.05,(ts-last)/1000||0);last=ts;
+  if(cw!==$('stage').clientWidth||ch!==$('stage').clientHeight)resize();
+  update(dt);draw();
+  requestAnimationFrame(frame);
+}
+newGame();resize();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
