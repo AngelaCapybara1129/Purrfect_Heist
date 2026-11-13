@@ -466,9 +466,13 @@ function drawOverlay(dt){
       c.font='800 13px '+FONT;c.textAlign='center';c.textBaseline='top';c.lineWidth=3;c.strokeStyle='#2b1b2e';
       c.strokeText(a.name,p.x,p.y+rad+3);c.fillStyle='#fbeed6';c.fillText(a.name,p.x,p.y+rad+3);
     }
-    if(D.fresh){        // 進入模式時，把指標放到最近的可用起點上
+    if(D.fresh){        // 進入模式時，起點已選好：把指標放到建議的終點（沒有的話放在起點）
       D.fresh=false;let b=null;
-      for(const s of SM.screen)if(s.start&&(!b||U.dist(P.x,P.y,s.a.x,s.a.y)<U.dist(P.x,P.y,b.a.x,b.a.y)))b=s;
+      const cs=SM.cands(D.from);let tgt=null;
+      for(const x of cs){const ok=SM.check(D.from,x).ok;if(!tgt||(ok&&!tgt.ok))tgt={a:x,ok:ok};}
+      for(const s of SM.screen){if(tgt&&s.a===tgt.a)b=s;}
+      if(!b)for(const s of SM.screen)if(s.a===D.from)b=s;
+      if(tgt){D.hover=tgt.a;D.res=SM.check(D.from,tgt.a);}
       if(b&&D.cx<0){D.cx=b.x;D.cy=b.y;if(PH.UI.setCursor)PH.UI.setCursor(b.x,b.y);}
     }
     if(D.from){
@@ -479,7 +483,7 @@ function drawOverlay(dt){
         c.strokeStyle=hp?(ok?'#8fe3b4':'#ef5d50'):'#7fd0e6';c.lineWidth=5;c.setLineDash([10,7]);c.lineDashOffset=-G.t*40;
         c.beginPath();c.moveTo(fp.x,fp.y);c.lineTo(ex,ey);c.stroke();c.setLineDash([]);
         if(D.res){
-          const tx=(fp.x+ex)/2,ty=(fp.y+ey)/2-16,s=ok?D.res.dist.toFixed(1)+' 公尺　消耗 '+D.res.cost+'　放開確認':D.res.why;
+          const tx=(fp.x+ex)/2,ty=(fp.y+ey)/2-16,s=ok?D.res.dist.toFixed(1)+' 公尺　消耗 '+D.res.cost+'　點一下或按 E 確認':D.res.why;
           c.font='800 15px '+FONT;c.textAlign='center';c.textBaseline='middle';
           const wd=c.measureText(s).width+18;c.fillStyle=ok?'#8fe3b4':'#ef5d50';c.fillRect(U.clamp(tx-wd/2,6,cw-wd-6),ty-14,wd,28);
           c.fillStyle='#2b1b2e';c.fillText(s,U.clamp(tx,wd/2+6,cw-wd/2-6),ty+1);

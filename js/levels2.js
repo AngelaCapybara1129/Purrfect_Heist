@@ -164,7 +164,7 @@ PH.defLevel({
     {id:'walker',kind:'sleepwalk',x:1.5,y:13.6,route:[[1.5,13.6],[6,13.6]]},
     {id:'sealer',kind:'shiba',at:'lockdown',door:'sdoor',x:8.5,y:11.5,sealer:1,route:[[9,11.6,1],[12,9],[14.5,11.6,1],[12,7.5]]}
   ],
-  openCut:['咪嚕打開回音飛魚罐，張開嘴——沒有聲音。','遠處的茶壺突然「喵」了一聲，連壺蓋都嚇了一跳。','解鎖：喵聲投射（按住 R 瞄準、放開投出）。站在貓縫旁邊時，聲音會從另一端先傳出去。'],
+  openCut:['咪嚕打開回音飛魚罐，張開嘴——沒有聲音。','遠處的茶壺突然「喵」了一聲，連壺蓋都嚇了一跳。','解鎖：喵聲投射（按住空白鍵瞄準、放開投出；點一下還是普通的喵）。站在貓縫旁邊時，聲音會從另一端先傳出去。'],
   onItem:function(L,e){
     if(e.kind==='ticket'&&PH.P.tickets===3){PH.UI.say('三張魚骨票到手！到北邊的交換所換罐罐。重裝鬥牛犬守著大路。',7);W.checkpoint('tickets',11.5,12.5);}
   },
@@ -180,7 +180,7 @@ PH.defLevel({
   },
   objective:function(L){
     const P=PH.P;
-    if(PH.S.practice)return L.f.teapot?{t:'走上跳板，前往罐頭月亮',x:22.5,y:15.5}:{t:'練習：按住 R 瞄準碼頭的茶壺，放開投射喵聲',x:17.5,y:17.5};
+    if(PH.S.practice)return L.f.teapot?{t:'走上跳板，前往罐頭月亮',x:22.5,y:15.5}:{t:'練習：按住空白鍵瞄準碼頭的茶壺，放開投射喵聲',x:17.5,y:17.5};
     if(!L.theft){
       if(P.tickets<3){
         const need=[];

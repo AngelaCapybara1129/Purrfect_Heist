@@ -176,6 +176,16 @@ D.scareAll=function(x,y,r){
     if(D.stun(d,'scared',2.6)){PH.FX.text(d.x,d.y,'嗚？！','#ffd23f');if(d.K.alarm&&!d.barked)d.pendBark=true;}
   }
 };
+// 附近有沒有呼嚕得睡的狗（給 E 的情境提示用）
+D.canPurr=function(x,y){
+  const L=PH.L;let best=null,bd=3.3;
+  for(const d of L.dogs){
+    if(!d.active||d.stunT>0||d.immune.sleepy||d.K.walker)continue;
+    if(CALM.indexOf(d.state)<0||d.meter>0.3)continue;
+    const dd=U.dist(d.x,d.y,x,y);if(dd<=bd){bd=dd;best=d;}
+  }
+  return best;
+};
 D.purr=function(x,y,dt){
   const L=PH.L;
   for(const d of L.dogs){

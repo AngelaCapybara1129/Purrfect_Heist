@@ -99,7 +99,7 @@ B.useProjector=function(){
   if(L.f.fish){say('魚影已經貼在尾巴上了。',3);return;}
   if(B.projCd>0){say('魚影投射器重新充能中……',3);PH.AU.play('no');return;}
   const a=Math.atan2(C.proj[1]-B.y,C.proj[0]-B.x),ok=U.dist(B.x,B.y,C.proj[0],C.proj[1])<9&&Math.abs(U.angd(B.ang,a))<1.35&&(B.state==='idle'||B.state==='walk'||B.state==='tele');
-  if(!ok){say('總督沒有看向投射器。先用喵聲投射（按住 R）在投射器附近叫一聲，把牠的頭引過來。',6);PH.AU.play('no');return;}
+  if(!ok){say('總督沒有看向投射器。先用喵聲投射（按住空白鍵瞄準、放開）在投射器附近叫一聲，把牠的頭引過來。',6);PH.AU.play('no');return;}
   W.set('fish');B.state='spin';B.timer=13*am();B.gfx.length=0;B.band=-1;
   PH.AU.play('squeak');PH.FX.text(B.x,B.y,'尾巴上有魚！','#7fd0e6');
   say('魚影貼上尾巴了！總督開始追自己的尾巴。離開投射器，去按西南的環形路徑開關。',7);

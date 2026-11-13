@@ -59,15 +59,15 @@ button:disabled{opacity:.35;cursor:default}
 .forms button{width:50px;height:42px;font-size:12px;line-height:1.1}
 .forms button[aria-pressed="true"],.acts2 button[aria-pressed="true"],#btnSneak[aria-pressed="true"]{background:var(--tuna)}
 .acts2 button{width:50px;height:40px;font-size:12px;line-height:1.1}
-#btnMeow,#btnPeek,#btnSneak{width:52px;height:52px;border-radius:50%;font-size:13px}
+#btnMeow,#btnSneak{width:52px;height:52px;border-radius:50%;font-size:13px}
 #btnE{width:76px;height:76px;border-radius:50%;font-size:15px;background:var(--yolk)}
-@media (pointer:fine){#btnPeek,#btnSneak,#btnE,#btnMeow,.acts2{display:none}.forms button{pointer-events:auto}}
+@media (pointer:fine){#btnSneak,#btnE,#btnMeow,.acts2{display:none}.forms button{pointer-events:auto}}
 .joy{position:absolute;left:max(14px,env(safe-area-inset-left,0px));bottom:14px;width:150px;height:150px;border-radius:50%;
   background:rgba(251,238,214,.22);border:3px solid rgba(251,238,214,.6);display:grid;place-items:center;touch-action:none}
 .joy i{width:62px;height:62px;border-radius:50%;background:var(--cream);box-shadow:0 3px 0 rgba(0,0,0,.3);pointer-events:none}
-@media (pointer:coarse){#btnE{width:90px;height:90px;font-size:17px}#btnMeow,#btnPeek,#btnSneak{width:58px;height:58px;font-size:14px}
+@media (pointer:coarse){#btnE{width:90px;height:90px;font-size:17px}#btnMeow,#btnSneak{width:58px;height:58px;font-size:14px}
   .forms button,.acts2 button{width:58px;height:48px;font-size:13px}}
-.keys{position:absolute;left:12px;bottom:12px;font-size:12px;opacity:.8;pointer-events:none;line-height:1.55;
+.keys{position:absolute;left:12px;bottom:12px;font-size:12px;opacity:.8;pointer-events:none;line-height:1.55;white-space:pre-line;
   background:rgba(35,26,46,.55);border-radius:12px;padding:6px 10px}
 .ov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(26,19,34,.72);padding:16px;text-align:center;overflow:auto;z-index:5}
 .card{background:var(--panel);border:3px solid var(--cream);border-radius:22px;padding:20px 22px;max-width:460px;width:100%;

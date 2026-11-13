@@ -109,7 +109,7 @@ PL.useItem=function(){
   const L=PH.L;P=PH.P;
   if(!P.item||P.hidden||PH.S.mode!=='play'){if(!P.item)no('身上沒有道具。');return;}
   if(P.item==='furball'){
-    const fx=Math.cos(P.face),fy=Math.sin(P.face);
+    P.face=PH.S.yaw;const fx=Math.cos(P.face),fy=Math.sin(P.face);   // 朝鏡頭方向丟
     L.decoy={x:P.x+fx*0.5,y:P.y+fy*0.5,vx:fx*3.4,vy:fy*3.4,t:0,run:1.6,life:7};
     P.item=null;PH.AU.play('hop');say('毛球替身跑出去了！看到的狗會先去查它，嗅一嗅就會識破。',4);
   }else if(P.item==='fish'){
@@ -159,9 +159,9 @@ function enterPipe(e,fromA){
 PL.action=function(){
   const L=PH.L,SM=PH.Seams;P=PH.P;
   let best=null;
-  const add=function(d,pri,label,fn,hold,id,dis){
+  const add=function(d,pri,label,fn,hold,id,dis,ex){
     const s=d-pri+(dis?4:0);
-    if(!best||s<best.s)best={s:s,label:label,fn:fn,hold:hold||0,id:id||label,dis:dis||null};
+    if(!best||s<best.s){best={s:s,label:label,fn:fn,hold:hold||0,id:id||label,dis:dis||null};if(ex)for(const k in ex)best[k]=ex[k];}
   };
   if(P.warp||P.pipe||P.fly)return null;
   if(P.hidden){const h=P.hidden;add(0,9,h.t==='mover'?'下車':h.t==='plant'?'離開盆栽':'離開紙箱',PL.unhide);return best;}
@@ -251,6 +251,13 @@ PL.action=function(){
       break;
     }
   }
+  // 情境動作（優先度最低，旁邊沒別的事可做時才出現）
+  if(!soft){
+    const dg=PH.Dogs.canPurr(P.x,P.y);   // 呼嚕：按住 E 讓附近沒起疑的狗睏
+    if(dg)add(1.2+U.dist(P.x,P.y,dg.x,dg.y)*0.2,0,'呼嚕，讓狗睏',function(){},9,'purr',null,{purr:true,dog:dg});
+  }
+  if(P.hasCan&&!P.moving&&!P.holdId||P.hasCan&&P.holdId==='drop')   // 放下罐罐：停下來才出現，要按住，避免誤放
+    add(3.5,0,'放下罐罐（當誘餌）',PL.dropCan,0.6,'drop',soft?'影子放不下罐罐。':null);
   return best;
 };
 PL.pressE=function(){
@@ -263,6 +270,10 @@ function interactTick(dt){
   const a=PL.cur=PL.action(),I=PH.IN;
   if(a&&a.hold&&P.holdId===a.id&&I.eHeld&&!a.dis){
     P.holdT+=dt;
+    if(a.purr){   // 呼嚕共鳴：按住期間持續施放
+      P.purrT-=dt;if(P.purrT<=0){P.purrT=0.5;PH.AU.play('purr');}
+      PH.Dogs.purr(P.x,P.y,dt);P.holdT=0;return;
+    }
     if(P.holdT>=a.hold){P.holdT=0;P.holdId=null;a.fn();PL.cur=null;}
   }else{P.holdT=0;if(!I.eHeld)P.holdId=null;}
 }
@@ -279,7 +290,7 @@ function pickups(){
       case 'bowl':{SV.bowls[e.id]=1;PH.saveGame();const n=Object.keys(SV.bowls).length;say('空餐碗線索（'+n+'/5）……這裡的狗，好像也沒吃飽。',5);break;}
       case 'flavor':SV.flavor[e.id]=1;PH.saveGame();say('找到'+e.name+'！（收藏用，開罐動畫會多一點彩色亮粉）',5);break;
       case 'key':W.set(e.flag);say('拿到'+e.name+'！',4);break;
-      default:if(P.item){got=false;}else{P.item=e.kind;say('撿到'+PH.ITEMS[e.kind]+'（按 T 使用）。',4);PH.UI.once('item_'+e.kind,
+      default:if(P.item){got=false;}else{P.item=e.kind;say('撿到'+PH.ITEMS[e.kind]+'（'+(PH.UI.fine?'點滑鼠左鍵':'按「道具」')+'使用）。',4);PH.UI.once('item_'+e.kind,
         e.kind==='furball'?'毛球替身：丟出去會短距離跑動，吸引看到它的狗去調查。':e.kind==='sticker'?'魚影貼紙：從狗的正後方近身貼上，牠會追著尾巴轉到頭暈。':'小魚乾：放在地上當假氣味，靠鼻子的狗會先去聞。',7);}
     }
     if(!got)continue;
@@ -296,6 +307,21 @@ PL.fall=function(){
   if(!W.fits(P.x,P.y,P.r,P.form))PL.transform('normal',true);
   PH.S.camSnap=true;say(L.def.fallMsg||'噗通！爬回最近的落腳點。',3);
 };
+
+// 前面有遮蔽物、而且只有一側空著時，回傳要探出去的方向（1 右、-1 左），否則 0
+function peekSide(){
+  const S=PH.S,fx=Math.cos(S.yaw),fy=Math.sin(S.yaw),rx=-fy,ry=fx;
+  const blk=function(x,y){return W.hgt(Math.floor(x),Math.floor(y))>=0.5;};
+  if(!blk(P.x+fx*0.9,P.y+fy*0.9))return 0;
+  let side=0;
+  for(const s of [1,-1]){
+    const sx=P.x+rx*0.75*s,sy=P.y+ry*0.75*s;
+    if(blk(sx,sy)||blk(sx+fx*0.9,sy+fy*0.9)||blk(sx+fx*1.8,sy+fy*1.8))continue;
+    if(side)return 0;   // 兩側都空：不是牆角
+    side=s;
+  }
+  return side;
+}
 
 /* ---------- 每幀 ---------- */
 PL.update=function(dt,rdt){
@@ -347,8 +373,10 @@ PL.update=function(dt,rdt){
   let mx=I.mx,my=I.my;
   if(P.slip>0){P.slip-=dt;mx=my=0;}
   if(SM.draw||P.aim){mx*=0.0;my*=0.0;}
-  if(I.peek&&P.slip<=0){P.lean+=(U.clamp(mx,-1,1)-P.lean)*Math.min(1,dt*9);mx=my=0;}
-  else P.lean*=Math.pow(0.0005,dt);
+  // 自動探頭：輕腳停在遮蔽物後面時，往空著的那一側探出去
+  const want=(I.sneak&&Math.abs(mx)+Math.abs(my)<0.05&&P.slip<=0&&!P.holdId)?peekSide():0;
+  P.lean+=(want-P.lean)*Math.min(1,dt*(want?6:9));
+  if(Math.abs(P.lean)<0.01)P.lean=0;
   const fx=Math.cos(S.yaw),fy=Math.sin(S.yaw);
   let dx=fx*my-fy*mx,dy=fy*my+fx*mx;const il=Math.hypot(dx,dy);
   if(il>1){dx/=il;dy/=il;}
@@ -377,12 +405,7 @@ PL.update=function(dt,rdt){
       if(n>0){W.noise(P.x,P.y,n,'step');PH.AU.play(tk==='water'?'wstep':P.form==='giant'?'thud':'step');if(P.form==='giant')PH.FX.shake(1.5);}
     }
   }
-  // 呼嚕共鳴
-  if(I.purr&&!P.moving&&P.form!=='shadow'){
-    P.purrT-=dt;if(P.purrT<=0){P.purrT=0.5;PH.AU.play('purr');}
-    PH.Dogs.purr(P.x,P.y,dt);
-  }
-  // 喵聲投射瞄準
+  // 喵聲投射瞄準（按住空白鍵）
   if(I.aim&&PH.has('echo')&&!SM.draw)P.aim=PL.aimPoint();
   else if(P.aim&&!I.aim)P.aim=null;
   SM.discover();

@@ -1,4 +1,4 @@
-/* 貓縫：預設縫點、拖曳連接、同時一組、合法性預覽、穿越、被封與洗痕 */
+/* 貓縫：預設縫點、點選連接、同時一組、合法性預覽、穿越、被封與洗痕 */
 (function(){
 'use strict';
 const PH=window.PH,U=PH.U,CFG=PH.CFG,W=PH.World;
@@ -14,7 +14,7 @@ SM.discover=function(){
     if(a.found||(a.off&&L.f[a.off])||(a.on&&a.found0&&!L.f[a.on]))continue;
     if(U.dist(P.x,P.y,a.x,a.y)<rr&&W.los(P.x,P.y,a.x,a.y,1.5)){
       a.found=true;PH.AU.play('blip');PH.FX.text(a.x,a.y,'魚骨縫線','#7fd0e6');
-      PH.UI.once('anchor','發現魚骨縫線！靠近它按住 F，從這個縫點拖到另一個，就能畫出貓縫。',7);
+      PH.UI.once('anchor','發現魚骨縫線！站在它旁邊按 F，再點另一個縫點（或按 E），就能畫出貓縫。',7);
     }
   }
 };
@@ -42,11 +42,50 @@ SM.begin=function(){
   if(P.form==='shadow'||P.form==='liquid'){PH.UI.say('這個形態抓不開縫，先變回來。',2.5);PH.AU.play('no');return false;}
   let any=false;for(const a of L.by.anchor)if(SM.startable(a))any=true;
   if(!any){PH.UI.say('附近沒有發現魚骨縫線。要先走近縫點。',2.5);PH.AU.play('no');return false;}
-  SM.draw={from:null,cx:-1,cy:-1,hover:null,res:null,fresh:true};
-  PH.UI.once('drawhow','畫縫模式：按住滑鼠（或手指）從亮著的縫點拖到另一個縫點再放開。時間會變慢最多 2 秒。',8);
+  // 起點自動選最近、能用的縫點；玩家只要點終點
+  let from=null;
+  for(const a of L.by.anchor)if(SM.startable(a)&&(!from||U.dist(P.x,P.y,a.x,a.y)<U.dist(P.x,P.y,from.x,from.y)))from=a;
+  SM.draw={from:from,cx:-1,cy:-1,hover:null,res:null,fresh:true,downA:null};
+  PH.AU.play('scratch');
+  PH.UI.once('drawhow','畫縫模式：起點已經選好（黃色）。點另一個縫點就完成，或直接按 E 接到建議的縫點。再按 F 或右鍵取消。時間會變慢最多 2 秒。',8);
   return true;
 };
 SM.end=function(){SM.draw=null;};
+// 起點能接的縫點（已發現的）
+SM.cands=function(a){
+  if(!a)return [];
+  const out=[],pairs=[].concat(a.pair);
+  for(const b of PH.L.by.anchor)if(b!==a&&b.found&&pairs.indexOf(b.id)>=0&&!(b.off&&PH.L.f[b.off]))out.push(b);
+  return out;
+};
+function setHover(D,b){D.hover=b&&b!==D.from?b:null;D.res=D.hover&&D.from?SM.check(D.from,D.hover):null;}
+function tryLink(D,b){
+  const r=SM.check(D.from,b);
+  if(r.ok){SM.create(D.from,b,r);SM.end();return true;}
+  if(SM.startable(b)&&[].concat(D.from.pair).indexOf(b.id)<0){D.from=b;setHover(D,null);PH.AU.play('scratch');return false;}   // 點到另一個起點：改用它當起點
+  PH.UI.say(r.why+'（沒有扣奇妙值）',3.2);PH.AU.play('no');   // 無效操作顯示原因，不扣能量
+  return false;
+}
+// 點一下縫點：沒有起點就設為起點；點起點本身取消選取；點別的就嘗試連接
+SM.click=function(a){
+  const D=SM.draw;if(!D||!a)return;
+  if(!D.from){
+    if(SM.startable(a)){D.from=a;PH.AU.play('scratch');}
+    else{PH.UI.say('起點要選你身邊的縫點（亮藍色的）。',2.6);PH.AU.play('no');}
+    return;
+  }
+  if(a===D.from){D.from=null;setHover(D,null);return;}
+  tryLink(D,a);
+};
+// E 確認：接到滑鼠指著的縫點，沒有的話接到建議的縫點
+SM.confirm=function(){
+  const D=SM.draw;if(!D)return;
+  if(!D.from){PH.UI.say('先點你身邊的縫點當起點。',2.6);PH.AU.play('no');return;}
+  let b=D.hover;
+  if(!b){const c=SM.cands(D.from);let best=null;for(const x of c){const ok=SM.check(D.from,x).ok;if(!best||(ok&&!best.ok))best={a:x,ok:ok};}b=best&&best.a;}
+  if(!b){PH.UI.say('這個縫點附近還沒發現能接的另一端。',2.8);PH.AU.play('no');return;}
+  tryLink(D,b);
+};
 SM.pick=function(x,y,needStart){
   let best=null,bd=PH.L.def.tutorial?CFG.seam.tutorSnap:CFG.seam.snap;
   for(const s of SM.screen){
@@ -55,22 +94,18 @@ SM.pick=function(x,y,needStart){
   }
   return best;
 };
-// 指標事件（座標是舞台像素）。畫縫模式裡拖曳只用來畫縫，不轉鏡頭。
+// 指標事件（座標是舞台像素）。畫縫模式裡滑鼠／手指只用來選縫點，不轉鏡頭。
+// 主要是「點一下」；從起點拖到終點放開也可以（觸控習慣）。
 SM.ptr=function(type,x,y){
   const D=SM.draw;if(!D)return;
   D.cx=x;D.cy=y;
-  if(type==='down'){D.from=SM.pick(x,y,true);D.hover=null;D.res=null;if(D.from)PH.AU.play('scratch');}
-  if(D.from){
-    const b=SM.pick(x,y,false);
-    D.hover=b&&b!==D.from?b:null;D.res=D.hover?SM.check(D.from,D.hover):null;
-  }
+  const a=SM.pick(x,y,false);
+  if(type==='down'){D.downA=a;return;}
+  if(type==='move'){if(D.from)setHover(D,a);return;}
   if(type==='up'){
-    if(D.from&&D.hover){
-      const r=SM.check(D.from,D.hover);
-      if(r.ok){SM.create(D.from,D.hover,r);SM.end();return;}
-      PH.UI.say(r.why+'（沒有扣奇妙值）',3.2);PH.AU.play('no');   // 無效操作顯示原因，不扣能量
-    }
-    D.from=null;D.hover=null;D.res=null;
+    const s=D.downA;D.downA=null;
+    if(s&&a&&s!==a&&SM.startable(s)){D.from=s;tryLink(D,a);return;}   // 拖曳連接
+    if(a&&a===s)SM.click(a);
   }
 };
 SM.create=function(a,b,r){

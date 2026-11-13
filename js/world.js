@@ -445,7 +445,7 @@ function updCan(dt){
     L.T.burp-=dt;
     if(L.T.burp<CFG.burp.warn&&P.hasCan&&!P.moving){
       L.T.still=(L.T.still||0)+dt;
-      if(L.T.still>=CFG.burp.soothe){L.T.burp=CFG.burp.every*0.85;L.T.still=0;PH.AU.play('purr');PH.FX.text(P.x,P.y,'乖～','#8fc3b4');PH.UI.once('soothed','安撫成功，打嗝延後了。也可以按 G 把罐罐放下，故意讓它在別處出聲。',6);}
+      if(L.T.still>=CFG.burp.soothe){L.T.burp=CFG.burp.every*0.85;L.T.still=0;PH.AU.play('purr');PH.FX.text(P.x,P.y,'乖～','#8fc3b4');PH.UI.once('soothed','安撫成功，打嗝延後了。也可以停下來按住 E 把罐罐放下，故意讓它在別處出聲。',6);}
     }else L.T.still=0;
     if(L.T.burp<=0){
       L.T.burp=CFG.burp.every;PH.AU.play('burp');PH.FX.text(c.x,c.y,'嗝！','#ffd23f');

@@ -30,24 +30,21 @@
   </div>
   <div id="toast" hidden></div>
   <div id="prompt" hidden><span id="promptTxt"></span><i id="promptBar"></i></div>
-  <div class="keys" id="keys" hidden>WASD 移動　滑鼠轉視角（先點一下畫面）　←→ 也能轉<br>E 互動／拿放（有些要按住）　Shift 輕腳（無聲慢走）<br>按住 F 畫貓縫：按住滑鼠從縫點拖到另一個縫點<br>Q 切換形態　1 普通　2 迷你　3 巨大　4 液體　5 影子<br>空白鍵 喵（巨大時是威嚇）　按住 R 瞄準、放開投射喵聲<br>按住 C 或滑鼠右鍵＋A／D 探頭　按住 Z 呼嚕<br>T 用道具　G 放下／抱起罐罐　Esc 暫停　H 收起說明</div>
+  <div class="keys" id="keys" hidden></div>
   <div class="joy" id="joy" aria-label="移動搖桿" hidden><i></i></div>
   <div class="pad" id="pad" hidden>
     <div class="acts2">
       <button id="btnSeam" aria-pressed="false">畫縫</button>
-      <button id="btnEcho" hidden>投射</button>
-      <button id="btnPurr">呼嚕</button>
-      <button id="btnItem">道具</button>
-      <button id="btnDrop">放罐</button>
+      <button id="btnItem" hidden>道具</button>
     </div>
-    <div class="forms" id="forms">
+    <div class="forms" id="forms" hidden>
       <button id="f_normal" aria-pressed="true">普通<br>1</button>
       <button id="f_mini" aria-pressed="false">迷你<br>2</button>
       <button id="f_giant" aria-pressed="false">巨大<br>3</button>
       <button id="f_liquid" aria-pressed="false">液體<br>4</button>
       <button id="f_shadow" aria-pressed="false">影子<br>5</button>
     </div>
-    <div class="acts"><button id="btnSneak" aria-pressed="false">輕腳</button><button id="btnPeek">探頭</button><button id="btnMeow">喵</button><button id="btnE">互動</button></div>
+    <div class="acts"><button id="btnSneak" aria-pressed="false">輕腳</button><button id="btnMeow">喵</button><button id="btnE">互動</button></div>
   </div>
 
   <div class="ov" id="ovTitle">
