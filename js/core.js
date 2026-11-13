@@ -4,6 +4,13 @@
 'use strict';
 const noop=function(){};
 const PH=window.PH={VERSION:3,LEVELS:{},ORDER:['prologue','kitchen','laundry','museum','market','moon','escape']};
+// 裝置判斷：mobile＝觸控為主（手機、平板），phone＝螢幕短邊小於 600px 的手機
+(function(){
+  let coarse=false;try{coarse=window.matchMedia('(pointer:coarse)').matches;}catch(e){}
+  const ua=navigator.userAgent||'',touchUA=/Android|iPhone|iPad|iPod|Mobile/i.test(ua)||(navigator.maxTouchPoints>1&&/Macintosh/.test(ua));
+  PH.mobile=coarse||touchUA;
+  PH.phone=PH.mobile&&Math.min(screen.width||999,screen.height||999)<600;
+})();
 
 const U=PH.U={
   clamp:function(v,a,b){return v<a?a:v>b?b:v;},
@@ -66,7 +73,10 @@ PH.loadSave=function(){
     const s=JSON.parse(localStorage.getItem(KEY)||'null');
     if(s&&s.v===PH.VERSION){const d=defSave();for(const k in d)if(s[k]!==undefined)d[k]=s[k];PH.SAVE=d;}
     if(PH.SAVE.opt)for(const k in PH.opt)if(PH.SAVE.opt[k]!==undefined)PH.opt[k]=PH.SAVE.opt[k];
-    else if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)PH.opt.calm=true;
+    if(!PH.SAVE.opt){   // 第一次開：依裝置給預設值
+      if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)PH.opt.calm=true;
+      if(PH.phone)PH.opt.lowfx=true;   // 手機預設省電畫質，覺得順可以在設定關掉
+    }
   }catch(e){}
 };
 PH.saveGame=function(){try{PH.SAVE.opt=Object.assign({},PH.opt);localStorage.setItem(KEY,JSON.stringify(PH.SAVE));}catch(e){}};

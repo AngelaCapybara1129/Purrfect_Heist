@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#231a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>喵不可罐：抓開宇宙的縫</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@500;800&display=swap">
 <link rel="stylesheet" href="css/game.css">
@@ -34,7 +38,6 @@
   <div class="joy" id="joy" aria-label="移動搖桿" hidden><i></i></div>
   <div class="pad" id="pad" hidden>
     <div class="acts2">
-      <button id="btnSeam" aria-pressed="false">畫縫</button>
       <button id="btnItem" hidden>道具</button>
     </div>
     <div class="forms" id="forms" hidden>
@@ -115,6 +118,13 @@
       <h2 id="endTitle"></h2>
       <p id="endTxt"></p>
       <div class="row" id="endBtns"></div>
+    </div>
+  </div>
+  <div id="rotate">
+    <div class="card">
+      <h2>把手機橫過來</h2>
+      <p>橫著拿畫面比較大，左手移動、右手轉視角也比較順。</p>
+      <button id="btnRotOk">先直著玩</button>
     </div>
   </div>
   <div class="ov" id="ovFatal" hidden>

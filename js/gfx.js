@@ -146,8 +146,9 @@ Object.assign(PH.FX,{
 G.init=function(canvas,overlay){
   cv=canvas;ov=overlay;ox=ov.getContext('2d');
   if(!T3){PH.UI.fatal('3D 函式庫沒有載入成功，請確認 lib/three.min.js 存在後重新整理。');return false;}
-  try{R3=new T3.WebGLRenderer({canvas:cv,antialias:true});}catch(e){PH.UI.fatal('這個瀏覽器無法啟動 3D 繪圖（WebGL）。');return false;}
-  R3.shadowMap.enabled=!PH.opt.lowfx;R3.shadowMap.type=T3.PCFSoftShadowMap;
+  // 手機：關掉抗鋸齒（改用 1.5 倍解析度補）、陰影貼圖減半、用較省電的柔邊陰影
+  try{R3=new T3.WebGLRenderer({canvas:cv,antialias:!PH.mobile,powerPreference:PH.mobile?'default':'high-performance'});}catch(e){PH.UI.fatal('這個瀏覽器無法啟動 3D 繪圖（WebGL）。');return false;}
+  R3.shadowMap.enabled=!PH.opt.lowfx;R3.shadowMap.type=PH.mobile?T3.PCFShadowMap:T3.PCFSoftShadowMap;
   V3=new T3.Vector3();
   scene=new T3.Scene();
   camera=new T3.PerspectiveCamera(56,1,0.05,400);
@@ -158,7 +159,7 @@ G.init=function(canvas,overlay){
   hemi=new T3.HemisphereLight('#fff','#888',0.7);scene.add(hemi);
   amb=new T3.AmbientLight('#000',1);scene.add(amb);
   sun=new T3.DirectionalLight('#fff',0.6);scene.add(sun);scene.add(sun.target);
-  sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-0.0006;sun.shadow.normalBias=0.02;
+  sun.castShadow=!PH.opt.lowfx;const sm=PH.mobile?1024:2048;sun.shadow.mapSize.set(sm,sm);sun.shadow.bias=-0.0006;sun.shadow.normalBias=0.02;
   // 漸層天空球
   const sg=new T3.SphereGeometry(180,24,12);sg.setAttribute('color',new T3.BufferAttribute(new Float32Array(sg.attributes.position.count*3),3));
   sky=new T3.Mesh(sg,new T3.MeshBasicMaterial({vertexColors:true,side:T3.BackSide,fog:false,depthWrite:false}));scene.add(sky);
@@ -174,7 +175,7 @@ function setSky(top,bot){
 G.resize=function(){
   if(!G.ok)return;
   const st=cv.parentElement;cw=st.clientWidth||1;ch=st.clientHeight||1;
-  dpr=Math.min(window.devicePixelRatio||1,PH.opt.lowfx?1:2);
+  dpr=Math.min(window.devicePixelRatio||1,PH.opt.lowfx?1:PH.mobile?1.5:2);
   R3.setPixelRatio(dpr);R3.setSize(cw,ch,false);
   ov.width=Math.round(cw*dpr);ov.height=Math.round(ch*dpr);
   camera.aspect=cw/ch;camera.updateProjectionMatrix();
@@ -338,6 +339,8 @@ G.toScreen=function(x,y,z){
   V3.set(x,y,z).applyMatrix4(camera.matrixWorldInverse);const front=V3.z<-.05;V3.applyMatrix4(camera.projectionMatrix);
   return {x:(V3.x*.5+.5)*cw,y:(-V3.y*.5+.5)*ch,front:front};
 };
+// 原本的每幀係數是以 60fps 調的；換算成跟幀率無關，120／144Hz 螢幕上手感才一致
+function ease(k60,dt){return 1-Math.pow(1-k60,Math.min(0.1,dt)*60);}
 function updCamera(dt){
   const L=PH.L,P=PH.P,S=PH.S,F=PH.FORMS[P.form].cam;
   const snap=S.camSnap;S.camSnap=false;
@@ -353,19 +356,19 @@ function updCamera(dt){
   }
   const fx=Math.cos(S.yaw),fz=Math.sin(S.yaw),px=P.x,pz=P.y;
   const far=(PH.Boss&&PH.Boss.active)?1.45:1;
-  G.cd+=(F.d*far-G.cd)*.08;G.chh+=(F.h*far-G.chh)*.08;G.cl+=(F.l-G.cl)*.08;
+  const e8=ease(.08,dt);G.cd+=(F.d*far-G.cd)*e8;G.chh+=(F.h*far-G.chh)*e8;G.cl+=(F.l-G.cl)*e8;
   if(P.hidden&&P.hidden.t==='box'){
     // 紙箱裡：只能從縫往外看，掀蓋看得多也更暴露
     const ey=.34+P.lift*.16;
     G.want.set(px-fx*.1,ey,pz-fz*.1);G.lookp.set(px+fx*2,ey+S.pitch*1.4,pz+fz*2);
-    camera.position.lerp(G.want,snap?1:.35);G.look.lerp(G.lookp,snap?1:.45);
+    camera.position.lerp(G.want,snap?1:ease(.35,dt));G.look.lerp(G.lookp,snap?1:ease(.45,dt));
   }else{
     const m=P.lean*.55,tx=px-fz*m,tz=pz+fx*m,ty=G.cl+.05+(P.fz||0);
     const d=G.cd*(1-Math.abs(P.lean)*.3),cyy=Math.max(.14,G.chh-S.pitch*d*.75+(P.fz||0));
     const k=camRay(tx,ty,tz,tx-fx*d,cyy,tz-fz*d);
     G.want.set(tx-fx*d*k,ty+(cyy-ty)*k,tz-fz*d*k);
     G.lookp.set(tx+fx*1.1,G.cl+S.pitch*1.9+(P.fz||0),tz+fz*1.1);
-    camera.position.lerp(G.want,snap?1:.28);G.look.lerp(G.lookp,snap?1:.32);
+    camera.position.lerp(G.want,snap?1:ease(.28,dt));G.look.lerp(G.lookp,snap?1:ease(.32,dt));
   }
   if(G.shake>0.05){camera.position.x+=(Math.random()-.5)*G.shake*.012;camera.position.y+=(Math.random()-.5)*G.shake*.012;G.shake*=Math.pow(.02,dt);}
   camera.lookAt(G.look);
@@ -483,7 +486,7 @@ function drawOverlay(dt){
         c.strokeStyle=hp?(ok?'#8fe3b4':'#ef5d50'):'#7fd0e6';c.lineWidth=5;c.setLineDash([10,7]);c.lineDashOffset=-G.t*40;
         c.beginPath();c.moveTo(fp.x,fp.y);c.lineTo(ex,ey);c.stroke();c.setLineDash([]);
         if(D.res){
-          const tx=(fp.x+ex)/2,ty=(fp.y+ey)/2-16,s=ok?D.res.dist.toFixed(1)+' 公尺　消耗 '+D.res.cost+'　點一下或按 E 確認':D.res.why;
+          const tx=(fp.x+ex)/2,ty=(fp.y+ey)/2-16,s=ok?D.res.dist.toFixed(1)+' 公尺　消耗 '+D.res.cost+'　點一下確認':D.res.why;
           c.font='800 15px '+FONT;c.textAlign='center';c.textBaseline='middle';
           const wd=c.measureText(s).width+18;c.fillStyle=ok?'#8fe3b4':'#ef5d50';c.fillRect(U.clamp(tx-wd/2,6,cw-wd-6),ty-14,wd,28);
           c.fillStyle='#2b1b2e';c.fillText(s,U.clamp(tx,wd/2+6,cw-wd/2-6),ty+1);
@@ -509,6 +512,20 @@ G.draw=function(dt){
   updFx(dt);
   R3.render(scene,camera);
   drawOverlay(dt);
+  watchFps(dt);
 };
-G.setLow=function(){if(R3){R3.shadowMap.enabled=!PH.opt.lowfx;G.resize();}};
+G.setLow=function(){if(R3){R3.shadowMap.enabled=!PH.opt.lowfx;sun.castShadow=!PH.opt.lowfx;G.resize();}};
+// 掉幀偵測：遊玩中連續幾秒平均低於約 28fps，自動切到「減少特效」（每次開遊戲最多一次）
+const fw={t:0,n:0,done:false};
+function watchFps(dt){
+  if(fw.done||PH.opt.lowfx||PH.S.mode!=='play'||dt<=0)return;
+  fw.t+=dt;fw.n++;
+  if(fw.t<4)return;
+  const avg=fw.t/fw.n;fw.t=0;fw.n=0;
+  if(avg>1/28){
+    fw.done=true;PH.opt.lowfx=true;G.setLow();PH.saveGame();
+    const b=document.getElementById('o_lowfx');if(b)b.checked=true;
+    PH.UI.say('畫面有點卡，已自動切換成「減少特效」。可以在設定裡關掉。',5);
+  }
+}
 })();

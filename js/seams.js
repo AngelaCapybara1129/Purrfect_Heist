@@ -14,7 +14,7 @@ SM.discover=function(){
     if(a.found||(a.off&&L.f[a.off])||(a.on&&a.found0&&!L.f[a.on]))continue;
     if(U.dist(P.x,P.y,a.x,a.y)<rr&&W.los(P.x,P.y,a.x,a.y,1.5)){
       a.found=true;PH.AU.play('blip');PH.FX.text(a.x,a.y,'魚骨縫線','#7fd0e6');
-      PH.UI.once('anchor','發現魚骨縫線！站在它旁邊按 F，再點另一個縫點（或按 E），就能畫出貓縫。',7);
+      PH.UI.once('anchor','發現魚骨縫線！走到它旁邊點一下開始畫縫，再點另一個縫點就完成。',7);
     }
   }
 };
@@ -47,7 +47,7 @@ SM.begin=function(){
   for(const a of L.by.anchor)if(SM.startable(a)&&(!from||U.dist(P.x,P.y,a.x,a.y)<U.dist(P.x,P.y,from.x,from.y)))from=a;
   SM.draw={from:from,cx:-1,cy:-1,hover:null,res:null,fresh:true,downA:null};
   PH.AU.play('scratch');
-  PH.UI.once('drawhow','畫縫模式：起點已經選好（黃色）。點另一個縫點就完成，或直接按 E 接到建議的縫點。再按 F 或右鍵取消。時間會變慢最多 2 秒。',8);
+  PH.UI.once('drawhow','畫縫模式：起點已經選好（黃色），指標也停在建議的縫點上——直接點一下就完成。點空白處取消。時間會變慢最多 2 秒。',8);
   return true;
 };
 SM.end=function(){SM.draw=null;};
@@ -100,12 +100,14 @@ SM.ptr=function(type,x,y){
   const D=SM.draw;if(!D)return;
   D.cx=x;D.cy=y;
   const a=SM.pick(x,y,false);
-  if(type==='down'){D.downA=a;return;}
+  if(type==='down'){D.downA=a;D.pressed=true;return;}
   if(type==='move'){if(D.from)setHover(D,a);return;}
   if(type==='up'){
-    const s=D.downA;D.downA=null;
+    if(!D.pressed)return;   // 進入畫縫模式的那一下點擊，放開時不算數
+    const s=D.downA;D.downA=null;D.pressed=false;
     if(s&&a&&s!==a&&SM.startable(s)){D.from=s;tryLink(D,a);return;}   // 拖曳連接
     if(a&&a===s)SM.click(a);
+    else if(!a&&!s)SM.end();   // 點空白處：取消畫縫
   }
 };
 SM.create=function(a,b,r){

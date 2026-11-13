@@ -95,3 +95,42 @@ label{display:flex;gap:8px;align-items:center}
 input[type=range]{flex:1;min-width:80px}
 @media (max-width:520px){.opts{grid-template-columns:1fr}.goal{flex-basis:100%;order:9}}
 @media (prefers-reduced-motion:reduce){.alert.chase,.lvl.l3,#canChip.warn{animation:none}}
+
+/* ---------- 手機 ---------- */
+body{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+#rotate{display:none;position:absolute;inset:0;z-index:9;background:rgba(26,19,34,.95);place-items:center;padding:20px;text-align:center}
+@media (pointer:coarse) and (orientation:portrait) and (max-width:600px){.stage:not(.portrait-ok) #rotate{display:grid}}
+/* 橫放手機：高度只有 360～430px，HUD 和按鈕都縮小，提示移到底部正中間 */
+@media (pointer:coarse) and (max-height:500px){
+  body{padding-block:4px}
+  .stage{border-radius:12px}
+  .hud{inset:6px 6px auto 6px;gap:5px}
+  .chip{font-size:11px;padding:4px 8px;border-radius:10px;gap:6px}
+  .bar{width:52px;height:8px}
+  .goal{flex-basis:160px}
+  #btnPause{width:34px;height:30px}
+  .joy{width:118px;height:118px;bottom:10px}
+  .joy i{width:48px;height:48px}
+  .pad{bottom:8px;gap:6px}
+  #btnE{width:72px;height:72px;font-size:14px}
+  #btnMeow,#btnSneak{width:50px;height:50px;font-size:12px}
+  .forms button,.acts2 button{width:44px;height:38px;font-size:11px}
+  #prompt{bottom:10px;max-width:38%;font-size:13px;padding:6px 10px}
+  #toast{top:44px;font-size:13px;padding:5px 12px}
+  #caps span{font-size:11px;padding:3px 8px}
+  .ov{padding:8px}
+  .card{padding:12px 16px;gap:8px}
+  #ovTitle h1{font-size:32px}
+  .card h2{font-size:19px}
+  .card button{padding:8px 14px;font-size:14px}
+  #ovCut .card{margin-bottom:8px}
+  #cutTxt{font-size:15px}
+}
+/* 直放手機：搖桿和形態列要擠得進 360～430px 寬 */
+@media (pointer:coarse) and (max-width:480px){
+  .joy{width:118px;height:118px}
+  .joy i{width:48px;height:48px}
+  .forms button{width:40px;height:36px;font-size:11px}
+  #btnE{width:76px;height:76px}
+  #prompt{bottom:150px}
+}

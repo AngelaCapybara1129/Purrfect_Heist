@@ -38,16 +38,16 @@ PH.defLevel({
     if(!L.T.dogIn&&P.y<5&&P.x<5&&!P.hidden){
       L.T.dogIn=1;PH.Dogs.release('shiba');
       PH.UI.cue('啪搭、啪搭……',11,7);
-      PH.UI.say('有狗來了！沙發擋住牠的視線。站到發光的魚骨縫線旁邊按 F，再點另一端的縫點（或按 E），畫出貓縫。',10);
+      PH.UI.say('有狗來了！沙發擋住牠的視線。走到發光的魚骨縫線旁邊點一下，再點另一端的縫點，畫出貓縫。',10);
     }
-    if(!L.T.t1&&PH.Seams.seam){L.T.t1=1;PH.UI.say('貓縫打開了！走到縫口按 E 鑽過去。教學中畫縫不扣奇妙值。',7);}
-    if(!L.T.t2&&P.x>6&&!L.theft){L.T.t2=1;PH.UI.say('柴柴守在地圖罐附近。靠近玩具球按 E 踢出去，牠會去查聲音。',8);}
+    if(!L.T.t1&&PH.Seams.seam){L.T.t1=1;PH.UI.say('貓縫打開了！走到縫口點一下鑽過去。教學中畫縫不扣奇妙值。',7);}
+    if(!L.T.t2&&P.x>6&&!L.theft){L.T.t2=1;PH.UI.say('柴柴守在地圖罐附近。靠近玩具球點一下把它踢出去，牠會去查聲音。',8);}
   },
   objective:function(L){
     const P=PH.P;
     if(!L.f.ate)return {t:'吃掉紙箱旁剩一口的迷你沙丁魚罐',x:3.4,y:7.5};
     if(P.x<5&&P.y>5.9)return {t:'縮小（2），從櫃子底下鑽出去',x:2.5,y:5.5};
-    if(P.x<5&&P.y>3.9&&P.y<=5.9)return {t:'按 F 畫貓縫，再按 E 接到櫃側',x:4.4,y:4.5};
+    if(P.x<5&&P.y>3.9&&P.y<=5.9)return {t:'在沙發腿縫點旁點一下，再點櫃側',x:4.4,y:4.5};
     if(!L.theft)return {t:'踢玩具球引開柴柴，拿走地圖罐',x:9.5,y:1.5};
     if(P.x<5&&P.y<3)return {t:'帶地圖罐鑽進窗邊紙箱',x:1.5,y:1.5};
     return {t:'從茶几背面畫貓縫，回到窗邊紙箱',x:8.5,y:3.6};

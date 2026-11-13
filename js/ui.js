@@ -64,7 +64,7 @@ UI.sync=function(dt){
     else if(tr==='walk'&&L.can)ct='罐罐在夢遊，記得抱回來';
   }
   show('canChip',!!ct);if(ct){set('canTxt',ct);$('canChip').classList.toggle('warn',warn);}
-  show('itemChip',!!P.item);if(P.item)set('itemChip','道具：'+PH.ITEMS[P.item]+(fine?'（左鍵使用）':''));
+  show('itemChip',!!P.item);if(P.item)set('itemChip','道具：'+PH.ITEMS[P.item]+(fine?'（右鍵使用）':''));
   show('btnItem',!!P.item);
   const hasT=L.id==='market'&&!L.theft;show('tickChip',hasT);if(hasT)set('tickChip','魚骨票 '+P.tickets+'/3');
   show('ambChip',!!L.amb.loud||!!L.amb.warn);if(L.amb.loud||L.amb.warn)set('ambChip',L.amb.loud?'洗衣機運轉中：聲音被蓋住':'洗衣機要開始轉了…');
@@ -82,19 +82,18 @@ UI.sync=function(dt){
   const a=PH.Player.cur,pr=$('prompt');
   if(a&&play&&!SM.draw){
     pr.hidden=false;pr.classList.toggle('dis',!!a.dis);
-    set('promptTxt',(fine?'E　':'')+a.label+(a.hold&&!a.dis?'（按住）':''));
+    set('promptTxt',(fine?'點擊／E　':'')+a.label+(a.hold&&!a.dis?'（按住）':''));
     const k=a.purr?(P.holdId===a.id&&a.dog?a.dog.sleepy/2.5:0):(a.hold&&P.holdId===a.id?P.holdT/a.hold:0);
     $('promptBar').style.width=Math.min(100,k*100)+'%';
   }else if(play&&SM.draw){
     pr.hidden=false;pr.classList.remove('dis');
-    set('promptTxt',fine?'點另一個縫點，或按 E 接到建議的縫點　F／右鍵 取消':'點另一個縫點完成　再按「畫縫」取消');
+    set('promptTxt','點另一個縫點完成　點空白處取消');
     $('promptBar').style.width='0%';
   }else pr.hidden=true;
   syncKeys(P);
   // 紙箱裡的窺視縫
   const inBox=play&&P.hidden&&P.hidden.t==='box';show('slit',!!inBox);
   if(inBox)$('slit').style.setProperty('--h',(31-P.lift*18)+'%');
-  $('btnSeam').setAttribute('aria-pressed',SM.draw?'true':'false');
   $('stage').classList.toggle('drawing',!!SM.draw);
 };
 
@@ -104,11 +103,12 @@ function syncKeys(P){
   if(!fine)return;
   const echo=PH.has('echo'),giant=PH.has('giant'),fs=PH.FORM_ORDER.filter(function(f){return PH.has(f);});
   const rows=['WASD 移動　滑鼠轉視角（先點一下畫面）',
-    'E 互動（照畫面下方的提示）　Shift 輕腳，停在遮蔽物後會自動探頭',
-    'F 畫貓縫：點另一個縫點或按 E 完成',
-    '空白鍵 喵'+(giant?'（巨大時是威嚇）':'')+(echo?'　按住瞄準、放開投射喵聲':'')];
+    '左鍵點擊 互動（照畫面下方的提示，E 也可以）',
+    '畫貓縫：在縫點旁點一下，再點另一個縫點',
+    '空白鍵 喵'+(giant?'（巨大時是威嚇）':'')+(echo?'　按住瞄準、放開投射喵聲':''),
+    'Shift 輕腳，停在遮蔽物後會自動探頭'];
   if(fs.length>1)rows.push('Q 切換形態　'+fs.map(function(f){return FNUM[f];}).join('　'));
-  if(P.item)rows.push('滑鼠左鍵 使用道具');
+  if(P.item)rows.push('右鍵 使用道具');
   rows.push('Esc 暫停　H 收起說明');
   set('keys',rows.join('\n'));
 }
@@ -133,7 +133,7 @@ UI.levels=function(){
     const d=PH.LEVELS[id],b=document.createElement('button'),done=!!sv.cleared[id],best=sv.best[id];
     b.textContent=d.title+'　'+d.name+(done?'　✓':'')+(best?'（'+U.fmtTime(best.time)+'）':'');
     b.disabled=!open&&!done;
-    b.addEventListener('click',function(){PH.AU.init();PH.Game.start(id);});
+    b.addEventListener('click',function(){PH.AU.init();goFull();PH.Game.start(id);});
     box.appendChild(b);
     if(!done)open=false;
   });
@@ -155,7 +155,7 @@ UI.pause=function(fromTitle){
   ov('ovPause',true);
 };
 UI.caught=function(title,gag,why){$('caughtTitle').textContent=title;$('gag').textContent=gag;$('why').textContent=why;ov('ovCaught',true);};
-UI.cut=function(text,more){$('cutTxt').textContent=text;$('cutMore').textContent=more||(fine?'按 E 或點一下繼續':'點一下繼續');ov('ovCut',true);};
+UI.cut=function(text,more){$('cutTxt').textContent=text;$('cutMore').textContent=more||'點一下繼續';ov('ovCut',true);};
 UI.result=function(r){
   $('resTitle').textContent=r.title;
   const st=$('stats');st.textContent='';
@@ -175,7 +175,17 @@ UI.ending=function(o){
 function locked(){return document.pointerLockElement===cv;}
 UI.lock=function(){if(fine&&!locked()&&cv.requestPointerLock){try{const p=cv.requestPointerLock();if(p&&p.catch)p.catch(function(){});}catch(e){}}};
 UI.unlock=function(){if(locked()&&document.exitPointerLock)document.exitPointerLock();};
-function clearInput(){for(const k in keys)keys[k]=false;IN.mx=IN.my=0;IN.eHeld=IN.sneak=IN.aim=false;spT=-1;joy.id=null;joy.x=joy.y=0;jk.style.transform='';}
+function clearInput(){for(const k in keys)keys[k]=false;IN.mx=IN.my=0;IN.eHeld=IN.sneak=IN.aim=false;spT=-1;joy.id=null;joy.x=joy.y=0;jk.style.transform='';jo.style.left=jo.style.bottom='';}
+// 手機：按「開始」時順便進全螢幕、鎖橫向（iPhone Safari 不支援，會直接略過）
+function goFull(){
+  if(!PH.mobile||document.fullscreenElement||document.webkitFullscreenElement)return;
+  const d=document.documentElement,f=d.requestFullscreen||d.webkitRequestFullscreen;if(!f)return;
+  try{
+    const p=f.call(d,{navigationUI:'hide'});
+    const lock=function(){try{const q=screen.orientation&&screen.orientation.lock&&screen.orientation.lock('landscape');if(q&&q.catch)q.catch(function(){});}catch(x){}};
+    if(p&&p.then)p.then(lock).catch(function(){});else lock();
+  }catch(x){}
+}
 // 空白鍵／喵鈕：點一下喵；解鎖喵聲投射後，按住超過一下下就變成瞄準，放開投出
 const AIM_DELAY=220;let spT=-1;
 function canAim(){return PH.has('echo')&&PH.P&&PH.P.form!=='giant'&&!PH.P.hidden;}
@@ -257,13 +267,27 @@ UI.init=function(){
       if(e.button===0){if(locked())SM.ptr('down',vc.x,vc.y);else{const p=stagePos(e);vc.x=p.x;vc.y=p.y;SM.ptr('down',p.x,p.y);}}
       look.id=e.pointerId;return;
     }
-    if(e.pointerType==='mouse'&&e.button===0&&locked()&&PH.P&&PH.P.item)PL.useItem();   // 已鎖定滑鼠時，左鍵用道具
+    if(e.pointerType!=='mouse'&&!fine&&joy.id===null){   // 觸控：左半邊畫面任一處按下就是搖桿（浮動搖桿）
+      const p=stagePos(e);
+      if(p.x<stage.clientWidth*0.42){
+        const w=jo.offsetWidth||150,h=jo.offsetHeight||150;
+        jo.style.left=Math.max(4,p.x-w/2)+'px';jo.style.bottom=Math.max(4,stage.clientHeight-p.y-h/2)+'px';
+        const r=jo.getBoundingClientRect();joy.id=e.pointerId;joy.bx=r.left+r.width/2;joy.by=r.top+r.height/2;
+        try{cv.setPointerCapture(e.pointerId);}catch(x){}
+        jmove(e);return;
+      }
+    }
+    if(e.pointerType==='mouse'&&locked()){   // 已鎖定滑鼠時：左鍵＝互動（可按住），右鍵＝道具
+      if(e.button===0){IN.eHeld=true;PL.pressE();}
+      else if(e.button===2&&PH.P&&PH.P.item)PL.useItem();
+    }
     if(e.pointerType==='mouse'&&fine&&!locked()){UI.lock();}
-    look.id=e.pointerId;look.x=e.clientX;look.y=e.clientY;
+    look.id=e.pointerId;look.x=e.clientX;look.y=e.clientY;look.sx=e.clientX;look.sy=e.clientY;look.t0=performance.now();
     try{cv.setPointerCapture(e.pointerId);}catch(x){}
   });
   cv.addEventListener('pointermove',function(e){
     const S=PH.S;if(S.mode!=='play')return;
+    if(e.pointerId===joy.id){jmove(e);return;}
     if(SM.draw){
       if(locked()){vc.x=U.clamp(vc.x+e.movementX,0,stage.clientWidth);vc.y=U.clamp(vc.y+e.movementY,0,stage.clientHeight);SM.ptr('move',vc.x,vc.y);}
       else if(e.pointerType==='mouse'||e.pointerId===look.id){const p=stagePos(e);vc.x=p.x;vc.y=p.y;SM.ptr('move',p.x,p.y);}
@@ -273,8 +297,12 @@ UI.init=function(){
     if(e.pointerId===look.id){rotate((e.clientX-look.x)*1.6,(e.clientY-look.y)*1.6);look.x=e.clientX;look.y=e.clientY;}
   });
   const pup=function(e){
+    if(e.pointerId===joy.id){jend(e);return;}
     look.btn[e.button]=false;
+    if(e.button===0&&e.pointerType==='mouse'&&!keys.KeyE)IN.eHeld=false;
     if(SM.draw&&e.button===0){if(locked())SM.ptr('up',vc.x,vc.y);else{const p=stagePos(e);SM.ptr('up',p.x,p.y);}}
+    else if(e.type==='pointerup'&&e.pointerType!=='mouse'&&e.pointerId===look.id&&PH.S.mode==='play'&&
+      performance.now()-look.t0<260&&Math.hypot(e.clientX-look.sx,e.clientY-look.sy)<12)PH.Player.pressE();   // 觸控：輕點畫面＝互動
     if(e.pointerId===look.id)look.id=null;
   };
   cv.addEventListener('pointerup',pup);cv.addEventListener('pointercancel',pup);
@@ -287,18 +315,18 @@ UI.init=function(){
   };
   jo.addEventListener('pointerdown',function(e){e.preventDefault();PH.AU.init();const r=jo.getBoundingClientRect();joy.id=e.pointerId;joy.bx=r.left+r.width/2;joy.by=r.top+r.height/2;try{jo.setPointerCapture(e.pointerId);}catch(x){}jmove(e);});
   jo.addEventListener('pointermove',function(e){if(e.pointerId===joy.id)jmove(e);});
-  const jend=function(e){if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;jk.style.transform='';}};
+  const jend=function(e){if(e.pointerId===joy.id){joy.id=null;joy.x=joy.y=0;jk.style.transform='';jo.style.left=jo.style.bottom='';}};
   jo.addEventListener('pointerup',jend);jo.addEventListener('pointercancel',jend);
   // 畫面按鈕
   bindBtn('btnE',function(){if(SM.draw){SM.confirm();return;}IN.eHeld=true;PL.pressE();},function(){IN.eHeld=false;});
   bindBtn('btnMeow',meowDown,meowUp);
-  bindBtn('btnSeam',function(){if(SM.draw)SM.end();else SM.begin();});
   bindBtn('btnSneak',function(){IN.sneakT=!IN.sneakT;$('btnSneak').setAttribute('aria-pressed',IN.sneakT?'true':'false');});
   bindBtn('btnItem',function(){PL.useItem();});
   PH.FORM_ORDER.forEach(function(f){bindBtn('f_'+f,function(){PL.transform(f);});});
   $('btnPause').addEventListener('click',function(){G.togglePause();});
   // 標題與選單
-  $('btnStart').addEventListener('click',function(){PH.AU.init();G.start(PH.SAVE.at&&PH.LEVELS[PH.SAVE.at]?PH.SAVE.at:'prologue');});
+  $('btnRotOk').addEventListener('click',function(){stage.classList.add('portrait-ok');});
+  $('btnStart').addEventListener('click',function(){PH.AU.init();goFull();G.start(PH.SAVE.at&&PH.LEVELS[PH.SAVE.at]?PH.SAVE.at:'prologue');});
   $('btnLevels').addEventListener('click',function(){UI.levels();});
   $('btnOpts').addEventListener('click',function(){UI.pause(true);});
   $('btnLvBack').addEventListener('click',function(){UI.title();});

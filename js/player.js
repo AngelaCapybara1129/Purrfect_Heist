@@ -63,7 +63,7 @@ PL.hide=function(e){
   P.hidden=e;P.x=e.x;P.y=e.y;P.vx=P.vy=0;P.lean=0;P.moving=false;L.stats.hides++;
   PH.AU.play('hop');PH.S.camSnap=true;
   PH.Dogs.sawHide(e);
-  if(e.t==='box')PH.UI.once('boxhint','紙箱裡只能從縫往外看。按住 W 掀蓋看更多（也更容易被發現）；按 E 出來。',7);
+  if(e.t==='box')PH.UI.once('boxhint','紙箱裡只能從縫往外看。按住 W 掀蓋看更多（也更容易被發現）；點一下出來。',7);
 };
 PL.unhide=function(){
   const e=P.hidden;if(!e)return;
@@ -167,6 +167,12 @@ PL.action=function(){
   if(P.hidden){const h=P.hidden;add(0,9,h.t==='mover'?'下車':h.t==='plant'?'離開盆栽':'離開紙箱',PL.unhide);return best;}
   const soft=P.form==='shadow',R=P.r;
   const se=SM.nearEnd();if(se)add(se.d,2.5,'鑽進貓縫',function(){SM.enter(se.a);},0,'seam');
+  // 站在縫點旁邊：點一下開始畫貓縫（起點自動選好，再點終點就完成）
+  if(!se&&!SM.draw)for(const an of L.by.anchor){
+    if(!SM.startable(an))continue;
+    const d=U.dist(P.x,P.y,an.x,an.y);if(d>1.6+R)continue;
+    add(d,1.0,'畫貓縫',function(){SM.begin();},0,'draw',soft||P.form==='liquid'?'這個形態抓不開縫，先變回來。':null);
+  }
   if(L.can){const d=U.dist(P.x,P.y,L.can.x,L.can.y);if(d<1.1+R)add(d,2,'抱起罐罐',PL.pickCan,0,'can',soft?'影子抱不了罐罐。':null);}
   if(P.item==='sticker'&&PL.behindDog())add(0,2,'貼上魚影貼紙',PL.useItem,0,'stick');
   for(const e of L.ents){
@@ -290,7 +296,7 @@ function pickups(){
       case 'bowl':{SV.bowls[e.id]=1;PH.saveGame();const n=Object.keys(SV.bowls).length;say('空餐碗線索（'+n+'/5）……這裡的狗，好像也沒吃飽。',5);break;}
       case 'flavor':SV.flavor[e.id]=1;PH.saveGame();say('找到'+e.name+'！（收藏用，開罐動畫會多一點彩色亮粉）',5);break;
       case 'key':W.set(e.flag);say('拿到'+e.name+'！',4);break;
-      default:if(P.item){got=false;}else{P.item=e.kind;say('撿到'+PH.ITEMS[e.kind]+'（'+(PH.UI.fine?'點滑鼠左鍵':'按「道具」')+'使用）。',4);PH.UI.once('item_'+e.kind,
+      default:if(P.item){got=false;}else{P.item=e.kind;say('撿到'+PH.ITEMS[e.kind]+'（'+(PH.UI.fine?'按滑鼠右鍵':'按「道具」')+'使用）。',4);PH.UI.once('item_'+e.kind,
         e.kind==='furball'?'毛球替身：丟出去會短距離跑動，吸引看到它的狗去調查。':e.kind==='sticker'?'魚影貼紙：從狗的正後方近身貼上，牠會追著尾巴轉到頭暈。':'小魚乾：放在地上當假氣味，靠鼻子的狗會先去聞。',7);}
     }
     if(!got)continue;
@@ -308,6 +314,23 @@ PL.fall=function(){
   PH.S.camSnap=true;say(L.def.fallMsg||'噗通！爬回最近的落腳點。',3);
 };
 
+// 門口對齊輔助：幾乎正面撞上牆角、但旁邊一點點就有開口時，把貓往開口側推，不用精準對準 1 公尺寬的門
+// ax 0＝沿 x 走被擋、1＝沿 y 走被擋；step 是這一幀想走的距離，side 是另一軸的速度
+function assist(ax,step,side,dt){
+  if(Math.abs(step)<1e-4||Math.abs(side)>Math.abs(step/dt)*0.7)return false;   // 斜著撞牆就照一般滑牆
+  const r=P.r,f=P.form,mv=Math.abs(step)*1.1;
+  const at=function(o){return ax===0?{x:P.x,y:P.y+o}:{x:P.x+o,y:P.y};};
+  for(let o=0.05;o<=0.45+1e-6;o+=0.05){
+    for(const s of [1,-1]){
+      const q=at(s*o),ahead=ax===0?W.fits(q.x+step,q.y,r,f):W.fits(q.x,q.y+step,r,f);
+      if(!ahead||!W.fits(q.x,q.y,r,f))continue;
+      const m=Math.min(o,mv),p=at(s*m);
+      if(!W.fits(p.x,p.y,r,f))continue;
+      P.x=p.x;P.y=p.y;return true;
+    }
+  }
+  return false;
+}
 // 前面有遮蔽物、而且只有一側空著時，回傳要探出去的方向（1 右、-1 左），否則 0
 function peekSide(){
   const S=PH.S,fx=Math.cos(S.yaw),fy=Math.sin(S.yaw),rx=-fy,ry=fx;
@@ -386,8 +409,8 @@ PL.update=function(dt,rdt){
     const acc=(il>0.05?32:46)*dt,tx=dx*sp,ty=dy*sp;
     P.vx+=U.clamp(tx-P.vx,-acc,acc);P.vy+=U.clamp(ty-P.vy,-acc,acc);
   }else{const f=Math.pow(0.08,dt);P.vx*=f;P.vy*=f;}
-  const nx=P.x+P.vx*dt;if(W.fits(nx,P.y,P.r,P.form))P.x=nx;else P.vx=0;
-  const ny=P.y+P.vy*dt;if(W.fits(P.x,ny,P.r,P.form))P.y=ny;else P.vy=0;
+  const nx=P.x+P.vx*dt;if(W.fits(nx,P.y,P.r,P.form))P.x=nx;else if(!assist(0,P.vx*dt,P.vy,dt))P.vx=0;
+  const ny=P.y+P.vy*dt;if(W.fits(P.x,ny,P.r,P.form))P.y=ny;else if(!assist(1,P.vy*dt,P.vx,dt))P.vy=0;
   const v=Math.hypot(P.vx,P.vy);P.moving=v>0.35;
   if(P.moving&&P.slip<=0)P.face=U.turn(P.face,Math.atan2(P.vy,P.vx),dt*14);
   if(PH.Boss&&PH.Boss.active)PH.Boss.pushOut(P);

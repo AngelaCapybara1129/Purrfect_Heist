@@ -150,9 +150,14 @@ W.pass=function(form,c,r){
   if(k==='pipe')return form==='liquid';
   return false;
 };
+// 圓形對方格：只有真的碰到格子才算擋住，轉角不會被方框的角勾住
 W.fits=function(x,y,r,form){
-  const c0=Math.floor(x-r),c1=Math.floor(x+r),r0=Math.floor(y-r),r1=Math.floor(y+r);
-  for(let rr=r0;rr<=r1;rr++)for(let cc=c0;cc<=c1;cc++)if(!W.pass(form,cc,rr))return false;
+  const c0=Math.floor(x-r),c1=Math.floor(x+r),r0=Math.floor(y-r),r1=Math.floor(y+r),r2=r*r;
+  for(let rr=r0;rr<=r1;rr++)for(let cc=c0;cc<=c1;cc++){
+    if(W.pass(form,cc,rr))continue;
+    const dx=x-U.clamp(x,cc,cc+1),dy=y-U.clamp(y,rr,rr+1);
+    if(dx*dx+dy*dy<r2)return false;
+  }
   return true;
 };
 // 腳下是不是穩固的地面（不是湯、海、縫隙），用來記錄落水後的重生點
@@ -445,7 +450,7 @@ function updCan(dt){
     L.T.burp-=dt;
     if(L.T.burp<CFG.burp.warn&&P.hasCan&&!P.moving){
       L.T.still=(L.T.still||0)+dt;
-      if(L.T.still>=CFG.burp.soothe){L.T.burp=CFG.burp.every*0.85;L.T.still=0;PH.AU.play('purr');PH.FX.text(P.x,P.y,'乖～','#8fc3b4');PH.UI.once('soothed','安撫成功，打嗝延後了。也可以停下來按住 E 把罐罐放下，故意讓它在別處出聲。',6);}
+      if(L.T.still>=CFG.burp.soothe){L.T.burp=CFG.burp.every*0.85;L.T.still=0;PH.AU.play('purr');PH.FX.text(P.x,P.y,'乖～','#8fc3b4');PH.UI.once('soothed','安撫成功，打嗝延後了。也可以停下來長按互動，把罐罐放下，故意讓它在別處出聲。',6);}
     }else L.T.still=0;
     if(L.T.burp<=0){
       L.T.burp=CFG.burp.every;PH.AU.play('burp');PH.FX.text(c.x,c.y,'嗝！','#ffd23f');
