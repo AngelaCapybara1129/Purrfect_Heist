@@ -29,6 +29,7 @@ PH.defLevel({
   dogs:[{id:'shiba',kind:'shiba',x:12.5,y:5.5,lurk:1,route:[[10,6.5],[9.5,2.8,1],[7,2.8,1],[9.5,2.8],[10,5,1]],route2:[[6.6,1.6,1],[6.6,6.5,1],[9.5,6.5]]}],
   openCut:['咪嚕撬開練習地圖罐——裡面是一張會自己指路的地圖。','地圖罐只負責導航，不會再多解鎖一種能力。','地圖上畫著一間廚房，還有一個會發光的罐罐。'],
   init:function(L){if(PH.SAVE.unl.mini){L.f.ate=true;L.E.oldcan.done=true;}},
+  onRestore:function(L){if(PH.SAVE.unl.mini){L.f.ate=true;L.E.oldcan.done=true;}},
   onFlag:function(L,k){
     if(k==='ate'&&!PH.SAVE.unl.mini){PH.SAVE.unl.mini=true;PH.saveGame();PH.AU.play('unlock');PH.UI.say('解鎖：迷你貓！按 2（或 Q）縮小，從櫃子底下鑽過去。',8);}
   },
@@ -75,7 +76,7 @@ PH.defLevel({
   id:'kitchen',title:'第一關',name:'會打噴嚏的廚房',size:[18,19],next:'laundry',
   reward:'giant',canName:'膨膨鮪魚罐',trouble:'burp',dogBoat:true,coreR:3.2,cpTheft:[6.6,3.5],
   lockMsg:'秩序局廣播：罐罐失竊！三秒後用鍋蓋封住走廊。',
-  pal:{sky:'#8fd6f7',sky2:'#d8f1ff',fog:'#bfe6f7',fogNear:26,fogFar:70,wall:'#ffe2a8',trim:'#ffb07c',floor:['#bfe9f2','#fff7e6','#ffd9a0','#ffe9c4'],block:'#3fc1a5',top:'#fff6e3',liquid:'#f6992b',liquidY:-1.4},
+  pal:{sky:'#8fd6f7',sky2:'#d8f1ff',fog:'#bfe6f7',fogNear:26,fogFar:70,wall:'#ffe2a8',trim:'#ffb07c',floor:['#bfe9f2','#fff7e6','#ffd9a0','#ffe9c4'],block:'#3fc1a5',top:'#fff6e3',liquid:'#f6992b',liquidY:-1.4,liquidRise:'theft'},
   mood:{hemi:['#e6f6ff','#ffcf9e',0.7],sun:['#fff2d0',0.6,[24,15,-2]]},
   ops:[['.',1,1,16,12],['H',1,1,1,1],['P',2,1,2,1],['H',3,1,3,1],['C',4,1,16,1],['K',11,1,12,1],
     ['C',1,3,3,3],['C',1,6,3,6],['C',3,5,3,5],['j',3,4,3,4],['T',7,4,10,6],['R',14,4,14,4],['L',6,8,6,8],['L',13,7,13,7],
@@ -84,7 +85,7 @@ PH.defLevel({
   legend:{H:{k:'solid',h:2.2,m:'block',col:'#eaf6ff',top:'#cfe4f2'},P:{k:'solid',h:0.3,m:'block',col:'#cfe4f2',top:'#eaf6ff'},
     K:{k:'solid',h:1.0,m:'block',col:'#b9c4cf',top:'#7fd0e6'},j:{k:'gap',h:1.0,lo:0.62,m:'gapblock',col:'#f3c98b'},
     R:{k:'solid',h:1.5,m:'rack',see:1},T:{k:'gap',h:0.62,lo:0.5,m:'table',col:'#ff6f61'}},
-  start:{x:2.5,y:11.5,box:'home'},
+  start:{x:2.5,y:11.5,box:'home',yaw:0},
   ents:[
     {t:'box',id:'home',x:2.5,y:11.5,safe:1,finish:1},
     {t:'anchor',id:'K1a',x:8.5,y:7.4,pair:'K1b',name:'桌腳'},

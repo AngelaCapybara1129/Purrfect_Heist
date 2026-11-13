@@ -15,7 +15,7 @@ PH.defLevel({
     [',',5,16,5,16],[',',1,17,12,19],['%',7,17,7,19]],
   legend:{L:{k:'solid',h:0.55,m:'block',col:'#8a2f3f',top:'#c9a24a'},P:{k:'solid',h:0.8,m:'block',col:'#2a2140',top:'#c9a24a'}},
   shade:[[4,17,10,19]],
-  start:{x:2.5,y:11.5,box:'home'},
+  start:{x:2.5,y:11.5,box:'home',yaw:0},
   ents:[
     {t:'box',id:'home',x:2.5,y:11.5,safe:1,finish:1},
     {t:'anchor',id:'M1a',x:4.4,y:10.5,pair:'M1b',name:'寄物櫃'},
@@ -283,7 +283,8 @@ PH.defLevel({
     {id:'gatedog',kind:'bulldog',x:15.5,y:23.1,post:1,face:1.5708,route:[[15.5,23.1]]},
     {id:'shiba',kind:'shiba',x:3.5,y:17.5,route:[[3.5,17.5,1],[3.5,22.5],[8.5,23.5,1],[3.5,22.5]]},
     {id:'bigear',kind:'ear',x:3,y:9,route:[[3,9,1],[3,13],[8.5,4.5,1],[10.5,1.6,1],[8.5,4.5]]},
-    {id:'poodle',kind:'poodle',x:26.5,y:8.5,route:[[26.5,8.5,1],[26.5,13.2,1]]}
+    {id:'poodle',kind:'poodle',x:26.5,y:8.5,route:[[26.5,8.5,1],[26.5,13.2,1]]},
+    {id:'minion',kind:'shiba',at:'p3',x:15.5,y:8.5,route:[[11.5,11.5,1],[13.5,8,1],[18,8,1]]}
   ],
   init:function(L){L.T.said=0;},
   onFlag:function(L,k,v){
@@ -353,7 +354,7 @@ PH.defLevel({
   mood:{hemi:['#aab6ff','#6b3f6b',0.75],sun:['#ffe0a8',0.55,[10,14,8]],amb:'#1a2040',dark:true},
   ops:[['.',1,2,3,6],['~',4,2,10,6],['.',7,3,7,5],['.',11,2,13,6],['~',14,2,21,6],['.',22,2,24,6],
     [',',25,2,34,6],['L',28,3,28,4],['L',31,4,31,5],[',',35,2,42,6],['H',38,2,38,6],['c',38,2,38,2]],
-  start:{x:2.5,y:4.5},
+  start:{x:2.5,y:4.5,yaw:0},
   ents:[
     {t:'mover',id:'toast1',pts:[[4.6,4.5],[6.4,4.5]],speed:1.3,wait:1.6,r:0.62,model:'toast'},
     {t:'mover',id:'toast2',pts:[[8.6,4.5],[10.4,4.5]],speed:1.3,wait:1.6,r:0.62,model:'plate'},
